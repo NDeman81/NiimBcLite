@@ -3,58 +3,105 @@ PS C:\dev\NiimBcLite> $Dst = 'C:\dev\NiimBcLite'
 PS C:\dev\NiimBcLite> $u   = New-Object System.Text.UTF8Encoding($false)
 PS C:\dev\NiimBcLite> cd $Dst
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> $fullDict = @{
->>     'линейный barcode supports printable ASCII characters only' = 'linear barcode supports printable ASCII characters only'
->>     'unknown barcode format %q (доступны: auto, code128, qr, qrl, qrr)' = 'unknown barcode format %q'
->>     'неверный процент шрифта %q' = 'invalid font percentage %q'
->>     'неверный размер шрифта %q' = 'invalid font size %q'
->>     'ошибка кодирования QR: %w' = 'QR encoding error: %w'
->>     'Рукопожатие (Connect)' = 'Handshake (Connect)'
->>     'Запрос параметра принтера' = 'Query printer parameter'
->>     'Установка плотности' = 'Set density'
->>     'Установка типа этикетки' = 'Set label type'
->>     'Старт задания печати' = 'Start print job'
->>     'Начало страницы' = 'Start page'
->>     'Размер страницы' = 'Set page size'
->>     'Строка изображения' = 'Bitmap row'
->>     'Пустая строка' = 'Empty row'
->>     'Конец страницы' = 'End page'
->>     'Завершение задания' = 'End print job'
->>     'Запрос статуса печати' = 'Query print status'
->>     'Чтение RFID этикеток' = 'Read label RFID'
->>     'Чтение RFID риббона' = 'Read ribbon RFID'
->>     'Калибровка датчика' = 'Calibrate sensor'
->>     'не найден системный шрифт с поддержкой кириллицы' = 'no system font found'
->>     'шрифт %q не найден в системе' = 'font %q not found in system'
->>     'неверный формат значения %s: %q' = 'invalid format for %s: %q'
->>     'значение %s должно быть > 0' = '%s must be > 0'
->>     'пустой шаблон' = 'empty template'
->>     'не указаны строки для печати' = 'no lines specified for printing'
->>     'в строке %d: не хватает столбца {%d}' = 'line %d: missing column {%d}'
->>     'в шаблоне нет элементов' = 'template has no elements'
->>     'неверная ширина или высота элемента' = 'invalid element width or height'
->>     'ошибка декодирования картинки: %w' = 'image decode error: %w'
->>     'неизвестный тип элемента %q' = 'unknown element kind %q'
->>     'ошибка данных принтера (0x06)' = 'printer data error (0x06)'
->>     'неизвестная ошибка принтера (0x%02x)' = 'unknown printer error (0x%02x)'
->>     'таймаут ожидания ответа на команду 0x%02x' = 'timeout waiting for response to command 0x%02x'
->>     'соединение с принтером потеряно' = 'connection to printer lost'
->>     'уже подключено' = 'already connected'
->>     'принтер не подключён' = 'printer not connected'
->>     'плотность должна быть от 1 до 3' = 'density must be between 1 and 3'
->>     'пустой список страниц' = 'empty page list'
+PS C:\dev\NiimBcLite> $restDict = @{
+>>     # ble.go
+>>     'нет бумаги' = 'out of paper'
+>>     'низкий заряд батареи' = 'low battery'
+>>     'исключение батареи' = 'battery exception'
+>>     'отменено пользователем' = 'cancelled by user'
+>>     'ошибка данных (принтер не успел принять — добавьте паузу между строками)' = 'data error (buffer overflow)'
+>>     'перегрев' = 'overheated'
+>>     'бумага закончилась' = 'paper ended'
+>>     'принтер занят' = 'printer busy'
+>>     'нет печатающей головки' = 'no printhead'
+>>     'низкая температура' = 'low temperature'
+>>     'головка не закреплена' = 'printhead unlocked'
+>>     'нет ленты (риббона)' = 'no ribbon'
+>>     'неподходящая лента' = 'incompatible ribbon'
+>>     'не разобрать адрес принтера %q: %w' = 'invalid printer address %q: %w'
+>>     'не удалось включить Bluetooth-адаптер: %w' = 'failed to enable Bluetooth adapter: %w'
+>>     'подключение: %w' = 'connect failed: %w'
+>>     'подключение к %s не удалось за 30 с — ' = 'connection to %s timed out after 30s - '
+>>     'принтер включён и не занят другим устройством?' = 'is printer powered on and not busy?'
+>>     'Сканирую, чтобы BlueZ увидел принтер …' = 'Scanning for printer...'
+>>     '  принтер на связи: %s (%s)' = '  printer found: %s (%s)'
+>>     'принтер %s не найден в эфире — включите его и повторите' = 'printer %s not found - turn it on and retry'
+>>     '  сканирование прервано: %v\n' = '  scan aborted: %v\n'
+>>     'принтер %q не найден' = 'printer %q not found'
+>>     'найден %s  %s  RSSI %d\n' = 'found %s  %s  RSSI %d\n'
+>>     'поиск сервисов: %w' = 'discover services: %w'
+>>     'не нашёл характеристику принтера (нужен сервис %s)' = 'printer characteristic not found (service %s)'
+>>     'неизвестный код' = 'unknown code'
+>>     'отправка 0x%02x: %w' = 'send 0x%02x: %w'
+>>     '! нет ответа на 0x%02x за %s' = '! no response to 0x%02x within %s'
+>>     '  рукопожатие: %d (2 = ConnectedNew)' = '  handshake: %d (2 = ConnectedNew)'
+>>     'неизвестная ошибка (код %d)' = 'unknown error (code %d)'
+>>     'принтер сообщил об ошибке: %s' = 'printer error: %s'
+>>     'отправка пачки строк: %w' = 'send batch rows: %w'
+>>     'буфер принтера переполнен в режиме fast — рекомендуем --print-mode safe' = 'printer buffer overflow in fast mode'
+>>     '  печать: %d строк, головка %d точек, плотность %d, тип этикетки %d' = '  print: %d rows, head %d px, density %d, label type %d'
+>>     'этикетка %d из %d: %w' = 'label %d of %d: %w'
+>>     'страница не завершилась за %s' = 'page did not finish within %s'
+>>     'не дождался подтверждения печати (этикетка может быть напечатана)' = 'timed out waiting for print confirmation'
+>>     'этикеток' = 'labels'
+>>     'ленты' = 'ribbon'
+>>     'принтер не ответил на запрос метки %s' = 'printer did not respond to %s RFID query'
+>>     'Запуск физической калибровки: протяжка пустой этикетки по датчику...' = 'Starting physical calibration...'
+>>     'Запуск тихой программной калибровки датчика (0x23, 0x59)...' = 'Starting silent sensor calibration (0x23, 0x59)...'
+>>     'Тихая калибровка завершена' = 'Silent calibration completed'
+>>     # protocol.go
+>>     'withgaps — этикетки с зазорами (обычные)' = 'withgaps - gap labels (standard)'
+>>     'continuous — непрерывная лента' = 'continuous - continuous roll'
+>>     'transparent — прозрачные' = 'transparent - transparent labels'
+>>     'blackmarkgap — с чёрной меткой' = 'blackmarkgap - black mark labels'
+>>     'heatshrink — термоусадочная трубка' = 'heatshrink - heat-shrink tube'
+>>     # render.go & template.go
+>>     'не нашёл TTF-шрифт с кириллицей — укажите свой через %s' = 'no TTF font found - specify via %s'
+>>     'у элемента %d не указан вид (kind)' = 'element %d: missing kind'
+>>     'элемент %d: неизвестный вид %q' = 'element %d: unknown kind %q'
+>>     'у линии не заданы размеры (w и h в мм)' = 'line: missing width/height (w, h in mm)'
+>>     'у рамки не заданы размеры (w и h в мм)' = 'frame: missing width/height (w, h in mm)'
+>>     'у окружности не заданы размеры (w и h в мм)' = 'circle: missing width/height (w, h in mm)'
+>>     ' — выберите другой в конструкторе' = ''
+>>     'у картинки не указан источник' = 'image: missing source'
+>>     'у картинки не заданы размеры (w и h в мм)' = 'image: missing width/height (w, h in mm)'
+>>     'картинка получается меньше точки' = 'image size is smaller than 1 pixel'
+>>     'пустое изображение' = 'empty image'
+>>     'повреждённый data:URL картинки' = 'corrupted image data:URL'
+>>     'разбор base64 картинки: %w' = 'base64 image decode error: %w'
+>>     'разбор картинки из шаблона: %w' = 'template image decode error: %w'
+>>     'разбор картинки %s: %w' = 'image %s decode error: %w'
+>>     'элемент использует %s, а в данных только %d столбц(а/ов)' = 'element uses %s, but row has only %d column(s)'
+>>     # main.go flags & usage
+>>     'MAC-адрес принтера' = 'printer Bluetooth MAC address'
+>>     'длина этикетки в мм' = 'label length in mm'
+>>     'плотность печати 1..3' = 'print density 1..3'
+>>     'тип этикеток (по умолчанию withgaps; auto — по RFID)' = 'label type (default: withgaps; auto = read RFID)'
+>>     'число копий' = 'number of copies'
+>>     'перевернуть на 180°' = 'rotate 180 degrees'
+>>     'формат кода: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr' = 'code format: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr'
+>>     'верхний текст штрихкода' = 'top caption text'
+>>     'нижний текст штрихкода' = 'bottom caption text'
+>>     'безопасный режим штрихкода' = 'barcode safe mode'
+>>     'имя PNG-файла для preview' = 'output PNG path for preview'
+>>     'тихий вывод (только ошибки)' = 'quiet mode (errors only)'
+>>     'сохранить параметры в config.json' = 'save flags to config.json'
+>>     'missing text lines этикетки' = 'missing text lines'
+>>     'barcode "ДАННЫЕ"                      Напечатать одиночный штрихкод или 2D-код' = 'barcode "DATA"         Print a single barcode or 2D code'
+>>     'text "Строка 1" ["Строка 2"]          Напечатать текстовую этикетку' = 'text "Line 1" ["Line 2"]              Print a text label'
+>>     'template "Шаблон" ["кол1;кол2"]       Напечатать по шаблону из Конструктора (.json или по имени)' = 'template "Name" ["col1;col2"]         Print a single label using a saved or .niimbot.json template'
+>>     '--top "Текст"      Верхняя подпись штрихкода' = '--top "Text"       Top caption for barcode'
+>>     '--bot "Текст"      Нижняя подпись штрихкода' = '--bot "Text"       Bottom caption for barcode'
 >> }
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> foreach ($f in @('barcode.go', 'ble.go', 'protocol.go', 'render.go', 'template.go', 'fonts.go', 'config.go')) {
+PS C:\dev\NiimBcLite> foreach ($f in @('ble.go', 'protocol.go', 'render.go', 'template.go', 'main.go')) {
 >>     $fp = "$Dst\$f"
->>     if (Test-Path $fp) {
->>         $txt = [IO.File]::ReadAllText($fp, $u)
->>         foreach ($k in $fullDict.Keys) { $txt = $txt.Replace($k, $fullDict[$k]) }
->>         [IO.File]::WriteAllText($fp, $txt, $u)
->>     }
+>>     $txt = [IO.File]::ReadAllText($fp, $u)
+>>     foreach ($k in $restDict.Keys) { $txt = $txt.Replace($k, $restDict[$k]) }
+>>     [IO.File]::WriteAllText($fp, $txt, $u)
 >> }
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Проверяем, остались ли ещё русские строки в строковых литералах кода
+PS C:\dev\NiimBcLite> # Проверяем, что не осталось ни одной русской строки в строковых литералах
 PS C:\dev\NiimBcLite> $leftRus = Select-String -Path "$Dst\*.go" -Pattern '"[^"]*[А-Яа-яЁё][^"]*"' | Where-Object { $_.Filename -notmatch '_test\.go$' }
 PS C:\dev\NiimBcLite> if ($leftRus) {
 >>     Write-Host "Остались строки:" -ForegroundColor Yellow
@@ -63,100 +110,8 @@ PS C:\dev\NiimBcLite> if ($leftRus) {
 >>     Write-Host "[OK] В коде niimbc-cli.exe не осталось ни одной русской строки!" -ForegroundColor Green
 >> }
 Остались строки:
-  ble.go:75: 0x02: "нет бумаги",
-  ble.go:76: 0x03: "низкий заряд батареи",
-  ble.go:77: 0x04: "исключение батареи",
-  ble.go:78: 0x05: "отменено пользователем",
-  ble.go:79: 0x06: "ошибка данных (принтер не успел принять — добавьте паузу между строками)",
-  ble.go:80: 0x07: "перегрев",
-  ble.go:81: 0x08: "бумага закончилась",
-  ble.go:82: 0x09: "принтер занят",
-  ble.go:83: 0x0a: "нет печатающей головки",
-  ble.go:84: 0x0b: "низкая температура",
-  ble.go:85: 0x0c: "головка не закреплена",
-  ble.go:86: 0x0d: "нет ленты (риббона)",
-  ble.go:87: 0x0e: "неподходящая лента",
-  ble.go:122: return nil, fmt.Errorf("не разобрать адрес принтера %q: %w", mac, err)
-  ble.go:126: return nil, fmt.Errorf("не удалось включить Bluetooth-адаптер: %w", err)
-  ble.go:157: return nil, fmt.Errorf("подключение: %w", r.err)
-  ble.go:162: return nil, fmt.Errorf("подключение к %s не удалось за 30 с — "+
-  ble.go:163: "принтер включён и не занят другим устройством?", mac)
-  ble.go:183: p.log("Сканирую, чтобы BlueZ увидел принтер …")
-  ble.go:192: p.log("  принтер на связи: %s (%s)", r.LocalName(), r.Address.String())
-  ble.go:203: return fmt.Errorf("принтер %s не найден в эфире — включите его и повторите", mac)
-  ble.go:240: return "", fmt.Errorf("не удалось включить Bluetooth-адаптер: %w", err)
-  ble.go:266: fmt.Fprintf(os.Stderr, "  сканирование прервано: %v\n", err)
-  ble.go:277: return "", fmt.Errorf("принтер %q не найден", nameHint)
-  ble.go:279: LogInfoMsg("найден %s  %s  RSSI %d\n", best.name, best.addr, best.rssi)
-  ble.go:287: return fmt.Errorf("поиск сервисов: %w", err)
-  ble.go:313: return fmt.Errorf("не нашёл характеристику принтера (нужен сервис %s)", bleServiceUUID)
-  ble.go:333: why = "неизвестный код"
-  ble.go:381: return nil, fmt.Errorf("отправка 0x%02x: %w", cmd, err)
-  ble.go:396: if cmd == cmdPrintStatus { LogDebugMsg("! нет ответа на 0x%02x за %s", cmd, timeout) } else { p.log("  ! нет ответа на 0x%02x за %s", cmd, timeout) }
-  ble.go:437: p.log("  рукопожатие: %d (2 = ConnectedNew)", info.ConnectResult)
-  ble.go:490: return fmt.Sprintf("неизвестная ошибка (код %d)", code)
-  ble.go:514: return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
-  ble.go:544: return fmt.Errorf("отправка пачки строк: %w", err)
-  ble.go:555: LogWarn("буфер принтера переполнен в режиме fast — рекомендуем --print-mode safe")
-  ble.go:557: return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
-  ble.go:603: p.log("  печать: %d строк, головка %d точек, плотность %d, тип этикетки %d",
-  ble.go:641: p.mu.Lock(); p.printingNow = true; p.mu.Unlock(); defer func() { p.mu.Lock(); p.printingNow = false; p.mu.Unlock() }(); p.beginJob(total, density, labelType); if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }
-  ble.go:644: if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))}; p.beginPage(len(rows), 1); if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }
-  ble.go:646: return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
-  ble.go:652: return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
-  ble.go:684: return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
-  ble.go:702: return fmt.Errorf("страница не завершилась за %s", timeout)
-  ble.go:723: return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
-  ble.go:739: return fmt.Errorf("не дождался подтверждения печати (этикетка может быть напечатана)")
-  ble.go:745: what := "этикеток"
-  ble.go:748: what = "ленты"
-  ble.go:755: return RfidInfo{}, fmt.Errorf("принтер не ответил на запрос метки %s", what)
-  ble.go:763: LogInfoMsg("Запуск физической калибровки: протяжка пустой этикетки по датчику...")
-  ble.go:767: LogInfoMsg("Запуск тихой программной калибровки датчика (0x23, 0x59)...")
-  ble.go:772: LogKey("Тихая калибровка завершена")
   config.go:41: DefaultQrSide  string `json:"defaultQrSide"`  // left | right (используется при bcFormat == "qr")
-  main.go:62: addrFlag := fs.String("address", "", "MAC-адрес принтера")
-  main.go:63: lenFlag := fs.Float64("length", 0, "длина этикетки в мм")
-  main.go:64: densFlag := fs.Int("density", 0, "плотность печати 1..3")
-  main.go:65: lblFlag := fs.String("label", "", "тип этикеток (по умолчанию withgaps; auto — по RFID)")
-  main.go:66: copFlag := fs.Int("copies", 0, "число копий")
-  main.go:67: flipFlag := fs.Bool("flip", false, "перевернуть на 180°")
-  main.go:68: fmtFlag := fs.String("format", "", "формат кода: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr")
-  main.go:69: topFlag := fs.String("top", "", "верхний текст штрихкода")
-  main.go:70: botFlag := fs.String("bot", "", "нижний текст штрихкода")
-  main.go:71: safeFlag := fs.Bool("safe", false, "безопасный режим штрихкода")
-  main.go:72: outFlag := fs.String("out", "", "имя PNG-файла для preview")
-  main.go:73: quietFlag := fs.Bool("quiet", false, "тихий вывод (только ошибки)")
-  main.go:74: saveCfgFlag := fs.Bool("save-config", false, "сохранить параметры в config.json")
-  main.go:203: fatal(fmt.Errorf("missing text lines этикетки"))
-  main.go:532: barcode "ДАННЫЕ"                      Напечатать одиночный штрихкод или 2D-код
-  main.go:533: text "Строка 1" ["Строка 2"]          Напечатать текстовую этикетку
-  main.go:535: template "Шаблон" ["кол1;кол2"]       Напечатать по шаблону из Конструктора (.json или по имени)
-  main.go:541: --top "Текст"      Верхняя подпись штрихкода
-  main.go:542: --bot "Текст"      Нижняя подпись штрихкода
-  protocol.go:105: 1:  "withgaps — этикетки с зазорами (обычные)",
-  protocol.go:106: 3:  "continuous — непрерывная лента",
-  protocol.go:107: 5:  "transparent — прозрачные",
-  protocol.go:108: 10: "blackmarkgap — с чёрной меткой",
-  protocol.go:109: 11: "heatshrink — термоусадочная трубка",
-  render.go:104: return "", fmt.Errorf("не нашёл TTF-шрифт с кириллицей — укажите свой через %s", fontEnvVar)
   render.go:138: FontSize     string  // "-1" или "0" (авто), "N" (точки/px), "Np" (процент от (availH / кол-во строк))
-  template.go:155: case "":                     err = fmt.Errorf("у элемента %d не указан вид (kind)", i+1)
-  template.go:157: err = fmt.Errorf("элемент %d: неизвестный вид %q", i+1, el.Kind)
-  template.go:488: return fmt.Errorf("у линии не заданы размеры (w и h в мм)")
-  template.go:497: return fmt.Errorf("у рамки не заданы размеры (w и h в мм)")
-  template.go:515: return fmt.Errorf("у окружности не заданы размеры (w и h в мм)")
-  template.go:613: return "", fmt.Errorf("font %q not found in system — выберите другой в конструкторе", family)
-  template.go:621: return fmt.Errorf("у картинки не указан источник")
-  template.go:629: return fmt.Errorf("у картинки не заданы размеры (w и h в мм)")
-  template.go:634: return fmt.Errorf("картинка получается меньше точки")
-  template.go:646: return fmt.Errorf("пустое изображение")
-  template.go:687: return nil, fmt.Errorf("повреждённый data:URL картинки")
-  template.go:691: return nil, fmt.Errorf("разбор base64 картинки: %w", err)
-  template.go:695: return nil, fmt.Errorf("разбор картинки из шаблона: %w", err)
-  template.go:706: return nil, fmt.Errorf("разбор картинки %s: %w", src, err)
-  template.go:775: fmtErr = fmt.Errorf("элемент использует %s, а в данных только %d столбц(а/ов)", m, len(row))
-  template.go:789: "элемент использует %s, а в данных только %d столбц(а/ов)", bad, len(row))
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> go test -v ./...
 === RUN   TestResolveFastLabelPriority
@@ -164,26 +119,26 @@ PS C:\dev\NiimBcLite> go test -v ./...
 === RUN   TestLiteBarcodeAndTemplateRender
 --- PASS: TestLiteBarcodeAndTemplateRender (0.12s)
 PASS
-ok      github.com/NDeman81/NiimBcLite  1.991s
+ok      github.com/NDeman81/NiimBcLite  1.985s
 PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Обновляем финальный архив релиза и фиксируем в Git
+PS C:\dev\NiimBcLite> # Удаляем временные файлы логов из репозитория, обновляем релиз и фиксируем в Git
+PS C:\dev\NiimBcLite> Remove-Item -Path "$Dst\TestResult*.txt" -Force -ErrorAction SilentlyContinue
 PS C:\dev\NiimBcLite> $RelDir = "$Dst\_Release"
 PS C:\dev\NiimBcLite> New-Item -ItemType Directory -Force -Path $RelDir | Out-Null
 PS C:\dev\NiimBcLite> Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -DestinationPath "$RelDir\NiimBcLite_v1.0.0_win64.zip" -Force
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> git add -A
-warning: in the working copy of 'barcode.go', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'ble.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'main.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'render.go', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'template.go', LF will be replaced by CRLF the next time Git touches it
-PS C:\dev\NiimBcLite> git commit -m "Localization: translate all remaining internal driver and renderer errors to English"
-[main 9c15db9] Localization: translate all remaining internal driver and renderer errors to English
- 9 files changed, 109 insertions(+), 331 deletions(-)
- delete mode 100644 Result.txt
- delete mode 100644 Result1.txt
- delete mode 100644 Result2.txt
- create mode 100644 TestResult1.txt
- create mode 100644 TestResult2.txt
+PS C:\dev\NiimBcLite> git commit -m "Localization: 100% English messages/errors across all CLI and BLE modules"
+[main c877627] Localization: 100% English messages/errors across all CLI and BLE modules
+ 9 files changed, 294 insertions(+), 193 deletions(-)
+ create mode 100644 Result.txt
+ delete mode 100644 TestResult1.txt
+ delete mode 100644 TestResult2.txt
 PS C:\dev\NiimBcLite> git tag -f v1.0.0
-Updated tag 'v1.0.0' (was ffa22df)
+Updated tag 'v1.0.0' (was 9c15db9)
 PS C:\dev\NiimBcLite>
