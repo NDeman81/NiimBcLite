@@ -85,14 +85,14 @@ func main() {
 	topFlag := fs.String("top", "", "top caption text")
 	botFlag := fs.String("bot", "", "bottom caption text")
 	safeFlag := fs.Bool("safe", false, "barcode safe mode")
-.\.git\fontNameFlag := fs.String("font-name", "", "font family name (e.g. Arial, Segoe UI)")
-.\.git\fontSizeFlag := fs.String("font-size", "", "main text size (-1=auto, 0=hide, only_text, 24, 30p)")
-.\.git\boldFlag := fs.Bool("bold", false, "bold main text")
-.\.git\marginFlag := fs.Int("margin", -1, "top/bottom margin in px")
-.\.git\sideMarginFlag := fs.Int("side-margin", -1, "left/right margin in px")
-.\.git\gapFlag := fs.Int("gap", -1, "gap between barcode and main text in px")
-.\.git\textGapFlag := fs.Int("text-gap", -1, "gap between top/bottom captions and center in px")
-.\.git\offsetFlag := fs.Int("offset", 0, "horizontal offset in px")
+	fontNameFlag := fs.String("font-name", "", "font family name (e.g. Arial, Segoe UI)")
+	fontSizeFlag := fs.String("font-size", "", "main text size (-1=auto, 0=hide, only_text, 24, 30p)")
+	boldFlag := fs.Bool("bold", false, "bold main text")
+	marginFlag := fs.Int("margin", -1, "top/bottom margin in px")
+	sideMarginFlag := fs.Int("side-margin", -1, "left/right margin in px")
+	gapFlag := fs.Int("gap", -1, "gap between barcode and main text in px")
+	textGapFlag := fs.Int("text-gap", -1, "gap between top/bottom captions and center in px")
+	offsetFlag := fs.Int("offset", 0, "horizontal offset in px")
 	outFlag := fs.String("out", "", "output PNG path for preview")
 	quietFlag := fs.Bool("quiet", false, "quiet mode (errors only)")
 	cp1251Flag := fs.Bool("cp1251", false, "decode input arguments from Windows-1251 (CP1251)")
@@ -151,6 +151,30 @@ func main() {
 	}
 	if *safeFlag {
 		cfg.BcSafeMode = true
+	}
+	if *fontNameFlag != "" {
+		cfg.FontName = ensureUTF8(strings.TrimSpace(*fontNameFlag), *cp1251Flag)
+	}
+	if *fontSizeFlag != "" {
+		cfg.FontSize = strings.TrimSpace(*fontSizeFlag)
+	}
+	if *boldFlag {
+		cfg.IsMainTextBold = true
+	}
+	if *marginFlag >= 0 {
+		cfg.MarginPx = *marginFlag
+	}
+	if *sideMarginFlag >= 0 {
+		cfg.SideMarginPx = *sideMarginFlag
+	}
+	if *gapFlag >= 0 {
+		cfg.GapPx = *gapFlag
+	}
+	if *textGapFlag >= 0 {
+		cfg.TextGapPx = *textGapFlag
+	}
+	if *offsetFlag != 0 {
+		cfg.OffsetPx = *offsetFlag
 	}
 	activeCfg = cfg
 
