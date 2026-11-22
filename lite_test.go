@@ -45,7 +45,7 @@ tpl := LabelTemplate{
 LengthMM: 50,
 Elements: []Element{
 {Kind: "text", X: 1, Y: 1, W: 48, H: 4, Text: "Позиция {1}", FontSize: "-1"},
-{Kind: "barcode", X: 1, Y: 5, W: 48, H: 6.5, Text: "{2}", BcFormat: "code128", BcSafeMode: true},
+{Kind: "barcode", X: 1, Y: 5, W: 48, H: 6.5, Text: "{2}", BcFormat: "code128", BcSafeMode: func() *bool { b := true; return &b }()},
 },
 }
 imgTpl, err := RenderTemplateCtx(tpl, []string{"Склад 1", "INV-01"}, 1, 1)
