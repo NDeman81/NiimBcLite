@@ -237,7 +237,23 @@ func main() {
 		}
 	case "template":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("укажите имя шаблона или путь к .niimbot.json"))
+			dir, _ := os.UserConfigDir()
+			tplFile := filepath.Join(dir, "niimbot", "templates.json")
+			data, err := os.ReadFile(tplFile)
+			if err != nil {
+				fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+				return
+			}
+			var list []SavedTemplate
+			if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
+				fmt.Println("Сохранённых шаблонов пока нет.")
+				return
+			}
+			fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+			for i, t := range list {
+				fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+			}
+			return
 		}
 		dataRow := ""
 		if len(args) > 1 {

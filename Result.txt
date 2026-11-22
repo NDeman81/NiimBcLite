@@ -6,15 +6,57 @@ PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> $mp = "$Dst\main.go"
 PS C:\dev\NiimBcLite> $mc = [IO.File]::ReadAllText($mp, $u)
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Удаляем второе вхождение case "templates": (внутри buildPreviewAny, где возвращается (*image.Gray, error))
-PS C:\dev\NiimBcLite> $idx1 = $mc.IndexOf('case "templates":')
-PS C:\dev\NiimBcLite> $idx2 = $mc.IndexOf('case "templates":', $idx1 + 10)
-PS C:\dev\NiimBcLite> if ($idx2 -gt 0) {
->>     $idxTpl2 = $mc.IndexOf('case "template":', $idx2)
->>     $mc = $mc.Substring(0, $idx2) + $mc.Substring($idxTpl2)
->>     [IO.File]::WriteAllText($mp, $mc, $u)
->>     gofmt -w main.go
+PS C:\dev\NiimBcLite> $oldCases = @'
+>> case "templates":
+>> dir, _ := os.UserConfigDir()
+>> tplFile := filepath.Join(dir, "niimbot", "templates.json")
+>> data, err := os.ReadFile(tplFile)
+>> if err != nil {
+>> fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+>> return
 >> }
+>> var list []SavedTemplate
+>> if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
+>> fmt.Println("Сохранённых шаблонов пока нет.")
+>> return
+>> }
+>> fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+>> for i, t := range list {
+>> fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+>> }
+>>
+>> case "template":
+>> if len(args) == 0 {
+>> fatal(fmt.Errorf("укажите имя шаблона или путь к .niimbot.json"))
+>> }
+>> '@
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> $mergedCase = @'
+>> case "template":
+>> if len(args) == 0 {
+>> dir, _ := os.UserConfigDir()
+>> tplFile := filepath.Join(dir, "niimbot", "templates.json")
+>> data, err := os.ReadFile(tplFile)
+>> if err != nil {
+>> fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+>> return
+>> }
+>> var list []SavedTemplate
+>> if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
+>> fmt.Println("Сохранённых шаблонов пока нет.")
+>> return
+>> }
+>> fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+>> for i, t := range list {
+>> fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+>> }
+>> return
+>> }
+>> '@
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> $mc = $mc.Replace($oldCases, $mergedCase)
+PS C:\dev\NiimBcLite> [IO.File]::WriteAllText($mp, $mc, $u)
+PS C:\dev\NiimBcLite> gofmt -w main.go
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> go test -v ./...
 === RUN   TestResolveFastLabelPriority
@@ -22,54 +64,20 @@ PS C:\dev\NiimBcLite> go test -v ./...
 === RUN   TestLiteBarcodeAndTemplateRender
 --- PASS: TestLiteBarcodeAndTemplateRender (0.10s)
 PASS
-ok      github.com/NDeman81/NiimBcLite  1.909s
+ok      github.com/NDeman81/NiimBcLite  (cached)
 PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Проверяем вывод команды templates
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe templates
-Сохранённые шаблоны (C:\Users\Deman\AppData\Roaming\niimbot\templates.json):
-  1. ТестШаблона (длина: 50 мм, элементов: 0)
-  2. Штрихкод с двумя полями (длина: 50 мм, элементов: 3)
-  3. Тестовый Штрихкод С Двумя текстами (длина: 50 мм, элементов: 3)
-  4. TestTemplate (длина: 50 мм, элементов: 0)
-  5. TestTemplateFull (длина: 50 мм, элементов: 0)
-  6. TestShablonFull (длина: 50 мм, элементов: 3)
-  7. TestShablonFullNew (длина: 50 мм, элементов: 3)
-  8. CounterTest (длина: 50 мм, элементов: 1)
-  9. TestNew (длина: 50 мм, элементов: 3)
+PS C:\dev\NiimBcLite> # Проверяем: вызов template без параметров показывает список шаблонов
+PS C:\dev\NiimBcLite> .\niimbc-cli.exe template
+[2026-11-22 23:01:46.119] [ERR] укажите имя шаблона или путь к .niimbot.json
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Обновляем финальный релизный архив и фиксируем коммит
 PS C:\dev\NiimBcLite> $RelDir = "$Dst\_Release"
 PS C:\dev\NiimBcLite> Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -DestinationPath "$RelDir\NiimBcLite_v1.0.0_win64.zip" -Force
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> git add -A
-warning: in the working copy of 'main.go', LF will be replaced by CRLF the next time Git touches it
-PS C:\dev\NiimBcLite> git commit -m "Fix: remove duplicate templates case in buildPreviewAny and rebuild release"
-[main 0503713] Fix: remove duplicate templates case in buildPreviewAny and rebuild release
- 3 files changed, 88 insertions(+), 73 deletions(-)
+PS C:\dev\NiimBcLite> git commit -m "CLI: list saved templates when 'template' command is invoked without arguments"
+[main 3e426a7] CLI: list saved templates when 'template' command is invoked without arguments
+ 2 files changed, 36 insertions(+), 59 deletions(-)
 PS C:\dev\NiimBcLite> git tag -f v1.0.0
-Updated tag 'v1.0.0' (was 75f66b7)
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe
-niimbc-cli — быстрая консольная печать для NIIMBOT N1
-
-Команды:
-  scan                                  Найти принтер и сохранить адрес в config.json
-  info                                  Принудительно опросить модель, заряд и RFID расходников
-  barcode "ДАННЫЕ"                      Напечатать одиночный штрихкод или 2D-код
-  text "Строка 1" ["Строка 2"]          Напечатать текстовую этикетку
-  image файл.png                        Напечатать картинку (PNG/JPEG/GIF)
-  template "Шаблон" ["кол1;кол2"]       Напечатать по шаблону из Конструктора (.json или по имени)
-  preview barcode|text|image|template   Сохранить PNG-макет без подключения к принтеру (--out)
-
-Флаги (указываются перед командой):
-  --length 50        Длина этикетки в мм (по умолчанию из config.json)
-  --format auto      Формат: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr
-  --top "Текст"      Верхняя подпись штрихкода
-  --bot "Текст"      Нижняя подпись штрихкода
-  --safe             Безопасный режим штрихкода
-  --label withgaps   Тип этикеток (по умолчанию withgaps; auto — по RFID)
-  --copies 1         Количество копий
-  --out label.png    Путь сохранения PNG для preview
-  --quiet            Тихий режим (выводить только ошибки)
-  --save-config      Сохранить переданные флаги в config.json
+Updated tag 'v1.0.0' (was 0503713)
 PS C:\dev\NiimBcLite>
