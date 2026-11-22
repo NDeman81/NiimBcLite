@@ -21,3 +21,13 @@ niimbc-cli.exe preview barcode "12345" --out out.png  :: сохранить PNG-
 ```
 
 Готовые `.cmd`-скрипты находятся в папке `examples_cmd\`.
+
+## Благодарности и первоисточник (Credits & License)
+
+Проект основан на открытом драйвере **[petrovich811/niimbot](https://github.com/petrovich811/niimbot)** (MIT License) — выражаем искреннюю благодарность автору **petrovich811** за восстановление протокола взаимодействия с NIIMBOT N1 по Bluetooth LE, архитектуру рендеринга и базовую реализацию на Go.
+
+Также благодарим авторов открытой библиотеки **[NiimBlueLib](https://github.com/MultiMote/niimbluelib)** (MIT License), по материалам которой был расшифрован протокол NIIMBOT.
+
+## Лицензия (License)
+
+Распространяется на условиях **MIT License** с сохранением оригинальных авторских прав в файле [LICENSE](LICENSE).
