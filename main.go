@@ -106,7 +106,7 @@ func main() {
 			flagsArgs = append(flagsArgs, a)
 			if !strings.Contains(a, "=") && i+1 < len(rawArgs) {
 				name := strings.TrimLeft(a, "-")
-				if name != "flip" && name != "safe" && name != "cp1251" && name != "bold" && name != "bold" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
+				if name != "flip" && name != "safe" && name != "cp1251" && name != "bold" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
 					flagsArgs = append(flagsArgs, rawArgs[i+1])
 					i++
 				}
