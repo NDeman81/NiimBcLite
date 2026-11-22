@@ -1,3 +1,7 @@
 niimbc-cli.exe
 *.png
 /*.txt
+*.xlsx
+*.xlsm
+*.xlsb
+~$*.xls*
