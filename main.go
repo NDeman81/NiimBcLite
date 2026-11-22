@@ -85,6 +85,14 @@ func main() {
 	topFlag := fs.String("top", "", "top caption text")
 	botFlag := fs.String("bot", "", "bottom caption text")
 	safeFlag := fs.Bool("safe", false, "barcode safe mode")
+.\.git\fontNameFlag := fs.String("font-name", "", "font family name (e.g. Arial, Segoe UI)")
+.\.git\fontSizeFlag := fs.String("font-size", "", "main text size (-1=auto, 0=hide, only_text, 24, 30p)")
+.\.git\boldFlag := fs.Bool("bold", false, "bold main text")
+.\.git\marginFlag := fs.Int("margin", -1, "top/bottom margin in px")
+.\.git\sideMarginFlag := fs.Int("side-margin", -1, "left/right margin in px")
+.\.git\gapFlag := fs.Int("gap", -1, "gap between barcode and main text in px")
+.\.git\textGapFlag := fs.Int("text-gap", -1, "gap between top/bottom captions and center in px")
+.\.git\offsetFlag := fs.Int("offset", 0, "horizontal offset in px")
 	outFlag := fs.String("out", "", "output PNG path for preview")
 	quietFlag := fs.Bool("quiet", false, "quiet mode (errors only)")
 	cp1251Flag := fs.Bool("cp1251", false, "decode input arguments from Windows-1251 (CP1251)")
@@ -98,7 +106,7 @@ func main() {
 			flagsArgs = append(flagsArgs, a)
 			if !strings.Contains(a, "=") && i+1 < len(rawArgs) {
 				name := strings.TrimLeft(a, "-")
-				if name != "flip" && name != "safe" && name != "cp1251" && name != "bold" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
+				if name != "flip" && name != "safe" && name != "cp1251" && name != "bold" && name != "bold" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
 					flagsArgs = append(flagsArgs, rawArgs[i+1])
 					i++
 				}
