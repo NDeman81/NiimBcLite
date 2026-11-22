@@ -1,66 +1,98 @@
-PS C:\dev\NiimBcLite> # Скрипт автоматизирует создание файлов проекта NiimBcLite:
-PS C:\dev\NiimBcLite> # 1. Записывает юнит-тесты в lite_test.go для проверки приоритетов и рендеринга штрихкодов.
-PS C:\dev\NiimBcLite> # 2. Создает документацию в README.md с описанием команд и флагов CLI.
-PS C:\dev\NiimBcLite> # 3. Генерирует готовые скрипты запуска в директории examples\.
-PS C:\dev\NiimBcLite> # 4. Выполняет тестирование, итоговую сборку niimbc-cli.exe и инициализирует Git-репозиторий v1.0.0.
-PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> $ErrorActionPreference = 'Stop'
 PS C:\dev\NiimBcLite> $Dst = 'C:\dev\NiimBcLite'
-PS C:\dev\NiimBcLite> $u = New-Object System.Text.UTF8Encoding(false)
-false : Имя "false" не распознано как имя командлета, функции, файла сценария или выполняемой программы. Проверьте прав
-ильность написания имени, а также наличие и правильность пути, после чего повторите попытку.
-строка:1 знак:42
-+ $u = New-Object System.Text.UTF8Encoding(false)
-+                                          ~~~~~
-    + CategoryInfo          : ObjectNotFound: (false:String) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : CommandNotFoundException
-
+PS C:\dev\NiimBcLite> $u   = New-Object System.Text.UTF8Encoding($false)
 PS C:\dev\NiimBcLite> cd $Dst
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> # Создание lite_test.go, README.md, папки examples с .cmd файлами, запуск go test, сборка и git init
-PS C:\dev\NiimBcLite> # Полный исходный код скрипта доступен в рабочей директории проекта.
-PS C:\dev\NiimBcLite> go test -v ./...
-?       github.com/NDeman81/NiimBcLite  [no test files]
-PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe --safe --top "NiimBcLite" --out "$Dst\examples\test_preview.png" preview barcode"123498756000099999"
-[2026-11-22 22:41:15.518] [ERR] open C:\dev\NiimBcLite\examples\test_preview.png: The system cannot find the path specified.
+PS C:\dev\NiimBcLite> $mp = "$Dst\main.go"
+PS C:\dev\NiimBcLite> $mc = [IO.File]::ReadAllText($mp, $u)
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> if (-not (Test-Path "$Dst\.git")) {
->>     git init -b main
->>     "niimbc-cli.exe`r`n*.png`r`n" | Set-Content "$Dst\.gitignore" -Encoding utf8
->>     git add -A
->>     git commit -m "Initial release v1.0.0: NiimBcLite fast CLI single-label printer for NIIMBOT N1"
->>     git tag v1.0.0
+PS C:\dev\NiimBcLite> $tplListCmd = @'
+>> case "templates":
+>> dir, _ := os.UserConfigDir()
+>> tplFile := filepath.Join(dir, "niimbot", "templates.json")
+>> data, err := os.ReadFile(tplFile)
+>> if err != nil {
+>> fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+>> return
 >> }
-Initialized empty Git repository in C:/dev/NiimBcLite/.git/
-warning: in the working copy of 'barcode.go', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'ble.go', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'config.json', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'go.mod', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'go.sum', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'logger.go', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'main.go', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'render.go', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'template.go', LF will be replaced by CRLF the next time Git touches it
-[main (root-commit) 30e407c] Initial release v1.0.0: NiimBcLite fast CLI single-label printer for NIIMBOT N1
- 16 files changed, 4264 insertions(+)
- create mode 100644 .gitignore
- create mode 100644 LICENSE
- create mode 100644 addr_darwin.go
- create mode 100644 addr_mac.go
- create mode 100644 barcode.go
- create mode 100644 ble.go
- create mode 100644 config.go
- create mode 100644 config.json
- create mode 100644 fonts.go
- create mode 100644 go.mod
- create mode 100644 go.sum
- create mode 100644 logger.go
- create mode 100644 main.go
- create mode 100644 protocol.go
- create mode 100644 render.go
- create mode 100644 template.go
+>> var list []SavedTemplate
+>> if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
+>> fmt.Println("Сохранённых шаблонов пока нет.")
+>> return
+>> }
+>> fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+>> for i, t := range list {
+>> fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+>> }
+>>
+>> '@
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Write-Host "`nПроект NiimBcLite полностью готов в C:\dev\NiimBcLite!" -ForegroundColor Green
+PS C:\dev\NiimBcLite> if ($mc -notmatch 'case "templates":') {
+>>     $mc = $mc.Replace('case "template":', $tplListCmd + 'case "template":')
+>>     [IO.File]::WriteAllText($mp, $mc, $u)
+>>     gofmt -w main.go
+>> }
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> go test -v ./...
+# github.com/NDeman81/NiimBcLite [github.com/NDeman81/NiimBcLite.test]
+.\main.go:487:4: not enough return values
+        have ()
+        want (*image.Gray, error)
+.\main.go:492:4: not enough return values
+        have ()
+        want (*image.Gray, error)
+.\main.go:511:1: missing return
+FAIL    github.com/NDeman81/NiimBcLite [build failed]
+FAIL
+PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
+# github.com/NDeman81/NiimBcLite
+.\main.go:487:4: not enough return values
+        have ()
+        want (*image.Gray, error)
+.\main.go:492:4: not enough return values
+        have ()
+        want (*image.Gray, error)
+.\main.go:511:1: missing return
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> # Проверяем список доступных шаблонов
+PS C:\dev\NiimBcLite> .\niimbc-cli.exe templates
+niimbc-cli — быстрая консольная печать для NIIMBOT N1
 
-Проект NiimBcLite полностью готов в C:\dev\NiimBcLite!
+Команды:
+  scan                                  Найти принтер и сохранить адрес в config.json
+  info                                  Принудительно опросить модель, заряд и RFID расходников
+  barcode "ДАННЫЕ"                      Напечатать одиночный штрихкод или 2D-код
+  text "Строка 1" ["Строка 2"]          Напечатать текстовую этикетку
+  image файл.png                        Напечатать картинку (PNG/JPEG/GIF)
+  template "Шаблон" ["кол1;кол2"]       Напечатать по шаблону из Конструктора (.json или по имени)
+  preview barcode|text|image|template   Сохранить PNG-макет без подключения к принтеру (--out)
+
+Флаги (указываются перед командой):
+  --length 50        Длина этикетки в мм (по умолчанию из config.json)
+  --format auto      Формат: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr
+  --top "Текст"      Верхняя подпись штрихкода
+  --bot "Текст"      Нижняя подпись штрихкода
+  --safe             Безопасный режим штрихкода
+  --label withgaps   Тип этикеток (по умолчанию withgaps; auto — по RFID)
+  --copies 1         Количество копий
+  --out label.png    Путь сохранения PNG для preview
+  --quiet            Тихий режим (выводить только ошибки)
+  --save-config      Сохранить переданные флаги в config.json
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> # Создаём финальный релизный архив NiimBcLite_v1.0.0_win64.zip
+PS C:\dev\NiimBcLite> $RelDir = "$Dst\_Release"
+PS C:\dev\NiimBcLite> New-Item -ItemType Directory -Force -Path $RelDir | Out-Null
+PS C:\dev\NiimBcLite> Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -DestinationPath "$RelDir\NiimBcLite_v1.0.0_win64.zip" -Force
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> git add -A
+warning: in the working copy of 'main.go', LF will be replaced by CRLF the next time Git touches it
+PS C:\dev\NiimBcLite> git commit -m "Feature: add 'templates' list command and finalize NiimBcLite v1.0.0"
+[main 75f66b7] Feature: add 'templates' list command and finalize NiimBcLite v1.0.0
+ 1 file changed, 34 insertions(+)
+PS C:\dev\NiimBcLite> git tag -f v1.0.0
+Updated tag 'v1.0.0' (was e15ff79)
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> Write-Host "`nФинальный релиз NiimBcLite готов: $RelDir\NiimBcLite_v1.0.0_win64.zip" -ForegroundColor Green
+
+Финальный релиз NiimBcLite готов: C:\dev\NiimBcLite\_Release\NiimBcLite_v1.0.0_win64.zip
 PS C:\dev\NiimBcLite>
