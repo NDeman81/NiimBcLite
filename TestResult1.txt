@@ -1,0 +1,65 @@
+PS C:\dev\NiimBcLite> $ErrorActionPreference = 'Continue'
+PS C:\dev\NiimBcLite> $Dst = 'C:\dev\NiimBcLite'
+PS C:\dev\NiimBcLite> cd $Dst
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> Write-Host "=== 1. ПОИСК ОСТАВШИХСЯ РУССКИХ СТРОК В ИСХОДНИКАХ ===" -ForegroundColor Cyan
+=== 1. ПОИСК ОСТАВШИХСЯ РУССКИХ СТРОК В ИСХОДНИКАХ ===
+PS C:\dev\NiimBcLite> $rusHits = Select-String -Path "$Dst\*.go" -Pattern '"[^"]*[А-Яа-яЁё][^"]*"' | Where-Object { $_.Filename -notmatch '_test\.go$' }
+PS C:\dev\NiimBcLite> if ($rusHits) {
+>>     Write-Host "Найдены оставшиеся русские строки в коде (покажем первые 20):" -ForegroundColor Yellow
+>>     $rusHits | Select-Object -First 20 | ForEach-Object { Write-Host ("  {0}:{1}: {2}" -f $_.Filename, $_.LineNumber, $_.Line.Trim()) }
+>> } else {
+>>     Write-Host "[OK] Все строковые сообщения в коде на английском!" -ForegroundColor Green
+>> }
+Найдены оставшиеся русские строки в коде (покажем первые 20):
+  barcode.go:65: return nil, fmt.Errorf("линейный barcode supports printable ASCII characters only")
+  barcode.go:90: return nil, fmt.Errorf("unknown barcode format %q (доступны: auto, code128, qr, qrl, qrr)", fmtMode)
+  barcode.go:197: return nil, fmt.Errorf("неверный процент шрифта %q", opts.FontSize)
+  barcode.go:208: return nil, fmt.Errorf("неверный размер шрифта %q", opts.FontSize)
+  barcode.go:278: return nil, fmt.Errorf("ошибка кодирования QR: %w", err)
+  ble.go:26: 0xc1: "Рукопожатие (Connect)",
+  ble.go:27: 0x40: "Запрос параметра принтера",
+  ble.go:28: 0x21: "Установка плотности",
+  ble.go:29: 0x23: "Установка типа этикетки",
+  ble.go:30: 0x01: "Старт задания печати",
+  ble.go:31: 0x03: "Начало страницы",
+  ble.go:32: 0x13: "Размер страницы",
+  ble.go:33: 0x85: "Строка изображения",
+  ble.go:34: 0x84: "Пустая строка",
+  ble.go:35: 0xe3: "Конец страницы",
+  ble.go:36: 0xf3: "Завершение задания",
+  ble.go:37: 0xa3: "Запрос статуса печати",
+  ble.go:38: 0x1a: "Чтение RFID этикеток",
+  ble.go:39: 0x1c: "Чтение RFID риббона",
+  ble.go:40: 0x59: "Калибровка датчика",
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> Write-Host "`n=== 2. ТЕСТ ГРАНИЧНЫХ СЛУЧАЕВ РЕНДЕРА (без расхода ленты) ===" -ForegroundColor Cyan
+
+
+=== 2. ТЕСТ ГРАНИЧНЫХ СЛУЧАЕВ РЕНДЕРА (без расхода ленты) ===
+PS C:\dev\NiimBcLite> $Tmp = "C:\Temp\NiimBcLite_Edge"
+PS C:\dev\NiimBcLite> Remove-Item -Path $Tmp -Recurse -Force -ErrorAction SilentlyContinue
+PS C:\dev\NiimBcLite> New-Item -ItemType Directory -Force -Path $Tmp | Out-Null
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> $edgeCmds = @(
+>>     @("--length", "30", "--out", "$Tmp\len30.png", "preview", "barcode", "12345678"),
+>>     @("--length", "40", "--flip", "--out", "$Tmp\flip40.png", "preview", "text", "Top Line", "Bottom Line"),
+>>     @("--format", "qrl", "--top", "Warehouse 1", "--bot", "Ryazan", "--out", "$Tmp\qrl.png", "preview", "barcode", "INV-2026-99"),
+>>     @("--format", "dmr", "--top", "DM Right", "--out", "$Tmp\dmr.png", "preview", "barcode", "SN-00112233"),
+>>     @("--out", "$Tmp\empty_col.png", "preview", "template", "TestShablonFullNew", "123498756000099999;;OnlyThirdCol")
+>> )
+PS C:\dev\NiimBcLite> foreach ($c in $edgeCmds) {
+>>     $out = & .\niimbc-cli.exe @c 2>&1
+>>     if ($LASTEXITCODE -ne 0) {
+>>         Write-Host "[FAIL] Команда упала ($LASTEXITCODE): $($c -join ' ') -> $out" -ForegroundColor Red
+>>     } else {
+>>         Write-Host "[OK] $($c -join ' ')" -ForegroundColor Green
+>>     }
+>> }
+[OK] --length 30 --out C:\Temp\NiimBcLite_Edge\len30.png preview barcode 12345678
+[OK] --length 40 --flip --out C:\Temp\NiimBcLite_Edge\flip40.png preview text Top Line Bottom Line
+[OK] --format qrl --top Warehouse 1 --bot Ryazan --out C:\Temp\NiimBcLite_Edge\qrl.png preview barcode INV-2026-99
+[OK] --format dmr --top DM Right --out C:\Temp\NiimBcLite_Edge\dmr.png preview barcode SN-00112233
+[OK] --out C:\Temp\NiimBcLite_Edge\empty_col.png preview template TestShablonFullNew 123498756000099999;;OnlyThirdCol
+PS C:\dev\NiimBcLite> Remove-Item -Path $Tmp -Recurse -Force -ErrorAction SilentlyContinue
+PS C:\dev\NiimBcLite>

@@ -610,7 +610,7 @@ func pickFont(family string, bold bool) (string, error) {
 	}
 	path, ok := resolveFontFamily(family, bold)
 	if !ok {
-		return "", fmt.Errorf("шрифт %q не найден в системе — выберите другой в конструкторе", family)
+		return "", fmt.Errorf("font %q not found in system — выберите другой в конструкторе", family)
 	}
 	return path, nil
 }

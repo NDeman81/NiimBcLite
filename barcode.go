@@ -62,7 +62,7 @@ func RenderBarcodeLabel(opts BarcodeOptions, cfg AppConfig) (*image.Gray, error)
 	switch fmtMode {
 	case "auto", "code128", "code39", "ean13", "ean8", "pdf417":
 		if !reAsciiPrint.MatchString(raw) {
-			return nil, fmt.Errorf("линейный barcode supports printable ASCII characters only")
+			return nil, fmt.Errorf("linear barcode supports printable ASCII characters only")
 		}
 		return renderLinearBarcodeLabel(raw, fmtMode, opts)
 	case "qr", "qrl", "qrr":
@@ -87,7 +87,7 @@ func RenderBarcodeLabel(opts BarcodeOptions, cfg AppConfig) (*image.Gray, error)
 		}
 		return render2dLabel(raw, side, opts, true)
 	default:
-		return nil, fmt.Errorf("unknown barcode format %q (доступны: auto, code128, qr, qrl, qrr)", fmtMode)
+		return nil, fmt.Errorf("unknown barcode format %q", fmtMode)
 	}
 }
 
@@ -194,7 +194,7 @@ func renderLinearBarcodeLabel(raw, fmtMode string, opts BarcodeOptions) (*image.
 	if isPercent {
 		v, err := strconv.Atoi(strings.TrimSuffix(fontSize, "p"))
 		if err != nil {
-			return nil, fmt.Errorf("неверный процент шрифта %q", opts.FontSize)
+			return nil, fmt.Errorf("invalid font percentage %q", opts.FontSize)
 		}
 		if v > 95 {
 			renderBarcode = false
@@ -205,7 +205,7 @@ func renderLinearBarcodeLabel(raw, fmtMode string, opts BarcodeOptions) (*image.
 	} else if fontSize != "only_text" {
 		v, err := strconv.Atoi(fontSize)
 		if err != nil {
-			return nil, fmt.Errorf("неверный размер шрифта %q", opts.FontSize)
+			return nil, fmt.Errorf("invalid font size %q", opts.FontSize)
 		}
 		fontVal = v
 	}
@@ -275,7 +275,7 @@ func render2dLabel(raw, side string, opts BarcodeOptions, isDM bool) (*image.Gra
 		qrCode, err = qr.Encode(raw, qr.M, qr.Auto)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("ошибка кодирования QR: %w", err)
+		return nil, fmt.Errorf("QR encoding error: %w", err)
 	}
 
 	lengthMM := opts.LengthMM

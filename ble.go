@@ -23,21 +23,21 @@ import (
 const niimbotCharUUID = "bef8d6c9-9c21-4c9e-b632-bd58c1009f9f"
 
 var cmdNames = map[byte]string{
-0xc1: "Рукопожатие (Connect)",
-0x40: "Запрос параметра принтера",
-0x21: "Установка плотности",
-0x23: "Установка типа этикетки",
-0x01: "Старт задания печати",
-0x03: "Начало страницы",
-0x13: "Размер страницы",
-0x85: "Строка изображения",
-0x84: "Пустая строка",
-0xe3: "Конец страницы",
-0xf3: "Завершение задания",
-0xa3: "Запрос статуса печати",
-0x1a: "Чтение RFID этикеток",
-0x1c: "Чтение RFID риббона",
-0x59: "Калибровка датчика",
+0xc1: "Handshake (Connect)",
+0x40: "Query printer parameter",
+0x21: "Set density",
+0x23: "Set label type",
+0x01: "Start print job",
+0x03: "Start page",
+0x13: "Set page size",
+0x85: "Bitmap row",
+0x84: "Empty row",
+0xe3: "End page",
+0xf3: "End print job",
+0xa3: "Query print status",
+0x1a: "Read label RFID",
+0x1c: "Read ribbon RFID",
+0x59: "Calibrate sensor",
 }
 
 func cmdTitle(cmd byte) string {
