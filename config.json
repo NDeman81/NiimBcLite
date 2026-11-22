@@ -9,7 +9,7 @@
   "length": 50,
   "height": 14,
   "density": 2,
-  "label": "",
+  "label": "withgaps",
   "flip": false,
   "threshold": 200,
   "copies": 1,

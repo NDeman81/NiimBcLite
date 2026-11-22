@@ -5,6 +5,7 @@ go 1.27.4
 require (
 	github.com/boombuler/barcode v1.1.0
 	golang.org/x/image v0.39.0
+	golang.org/x/text v0.44.0
 	tinygo.org/x/bluetooth v0.13.0
 )
 
@@ -19,5 +20,4 @@ require (
 	github.com/tinygo-org/pio v0.2.0 // indirect
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
 )

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"golang.org/x/text/encoding/charmap"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -13,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type SavedTemplate struct {
@@ -54,6 +56,20 @@ func buildTextOptionsFromConfig() TextRenderOptions {
 	}
 }
 
+func ensureUTF8(s string, forceCP1251 bool) string {
+	if s == "" {
+		return s
+	}
+	if !forceCP1251 && utf8.ValidString(s) {
+		return s
+	}
+	dec, err := charmap.Windows1251.NewDecoder().String(s)
+	if err != nil {
+		return s
+	}
+	return dec
+}
+
 func main() {
 	cfg := LoadConfig()
 	activeCfg = cfg
@@ -71,6 +87,7 @@ func main() {
 	safeFlag := fs.Bool("safe", false, "barcode safe mode")
 	outFlag := fs.String("out", "", "output PNG path for preview")
 	quietFlag := fs.Bool("quiet", false, "quiet mode (errors only)")
+	cp1251Flag := fs.Bool("cp1251", false, "decode input arguments from Windows-1251 (CP1251)")
 	saveCfgFlag := fs.Bool("save-config", false, "save flags to config.json")
 
 	var flagsArgs, posArgs []string
@@ -81,7 +98,7 @@ func main() {
 			flagsArgs = append(flagsArgs, a)
 			if !strings.Contains(a, "=") && i+1 < len(rawArgs) {
 				name := strings.TrimLeft(a, "-")
-				if name != "flip" && name != "safe" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
+				if name != "flip" && name != "safe" && name != "cp1251" && name != "quiet" && name != "save-config" && name != "h" && name != "help" {
 					flagsArgs = append(flagsArgs, rawArgs[i+1])
 					i++
 				}
@@ -92,6 +109,11 @@ func main() {
 	}
 	_ = fs.Parse(flagsArgs)
 
+	for i := range posArgs {
+		posArgs[i] = ensureUTF8(posArgs[i], *cp1251Flag)
+	}
+	*topFlag = ensureUTF8(*topFlag, *cp1251Flag)
+	*botFlag = ensureUTF8(*botFlag, *cp1251Flag)
 	if *quietFlag {
 		SetLogLevel("error")
 	} else {

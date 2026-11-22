@@ -53,3 +53,14 @@ if err != nil || imgTpl.Bounds().Dx() != 400 {
 t.Fatalf("ошибка рендера шаблона: %v", err)
 }
 }
+
+func TestEnsureUTF8FromCP1251(t *testing.T) {
+// Байты слова "Насос" в кодировке Windows-1251: CD E0 F1 EE F1
+win1251Bytes := string([]byte{0xCD, 0xE0, 0xF1, 0xEE, 0xF1})
+if got := ensureUTF8(win1251Bytes, false); got != "Насос" {
+t.Fatalf("ожидали 'Насос', получили %q", got)
+}
+if got := ensureUTF8("Склад №1", false); got != "Склад №1" {
+t.Fatalf("UTF-8 строка не должна искажаться, получили %q", got)
+}
+}
