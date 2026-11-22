@@ -242,6 +242,52 @@ Public Sub Niim_ShowBarcodeOnForm(ByVal imgControl As Object, ByVal barcodeData 
     On Error GoTo 0
 End Sub
 
+' 4б. Предпросмотр ПОЛНОГО ШАБЛОНА с полями формы в элемент Image на UserForm
+' Пример: Niim_ShowTemplateOnForm Me.imgPreview, Me.cmbTemplate.Value, Me.txtField1.Value, Me.txtField2.Value, Me.txtField3.Value
+Public Sub Niim_ShowTemplateOnForm(ByVal imgControl As Object, ByVal templateName As String, ParamArray fieldValues() As Variant)
+    Dim fso As Object, tmpDir As String, pngPath As String, bmpPath As String
+    Dim i As Long, cols() As String, rowData As String, cmd As String, logOut As String, rc As Long
+
+    If Trim(templateName) = "" Then
+        Set imgControl.Picture = Nothing
+        Exit Sub
+    End If
+
+    If UBound(fieldValues) >= LBound(fieldValues) Then
+        ReDim cols(LBound(fieldValues) To UBound(fieldValues))
+        For i = LBound(fieldValues) To UBound(fieldValues)
+            cols(i) = Replace(Trim(CStr(fieldValues(i))), ";", ",")
+        Next i
+        rowData = Join(cols, ";")
+    End If
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    tmpDir = fso.GetSpecialFolder(2)
+    pngPath = tmpDir & "\niim_form_tpl_preview.png"
+    bmpPath = tmpDir & "\niim_form_tpl_preview.bmp"
+
+    cmd = "--out " & EscArg(pngPath) & " preview template " & EscArg(templateName)
+    If rowData <> "" Then cmd = cmd & " " & EscArg(rowData)
+
+    rc = RunNiimCliUTF8(cmd, logOut)
+    If rc <> 0 Or Not fso.FileExists(pngPath) Then
+        MsgBox "Ошибка формирования превью шаблона:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+        Exit Sub
+    End If
+
+    If ConvertPngToBmp(pngPath, bmpPath) Then
+        imgControl.PictureSizeMode = 3
+        Set imgControl.Picture = LoadPicture(bmpPath)
+    Else
+        MsgBox "Не удалось конвертировать PNG в BMP через WIA.", vbExclamation, "NiimBcLite"
+    End If
+
+    On Error Resume Next
+    fso.DeleteFile pngPath, True
+    fso.DeleteFile bmpPath, True
+    On Error GoTo 0
+End Sub
+
 ' 5. Передача данных для печати из полей UserForm
 Public Function Niim_PrintFromForm(ByVal templateName As String, ByVal copies As Long, ParamArray fieldValues() As Variant) As Boolean
     Dim i As Long, cols() As String, rowData As String, cmd As String, logOut As String, rc As Long

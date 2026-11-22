@@ -48,3 +48,10 @@ Private Sub btnPrint_Click()
     End If
 End Sub
 ```
+
+### 4б. Предпросмотр полного шаблона в элемент `Image` на форме (`UserForm`)
+```vb
+Private Sub btnPreview_Click()
+    Niim_ShowTemplateOnForm Me.imgPreview, Me.cmbTemplate.Value, Me.txtField1.Value, Me.txtField2.Value, Me.txtField3.Value
+End Sub
+```
