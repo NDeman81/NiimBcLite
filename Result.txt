@@ -6,34 +6,7 @@ PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> $mp = "$Dst\main.go"
 PS C:\dev\NiimBcLite> $mc = [IO.File]::ReadAllText($mp, $u)
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> $oldCases = @'
->> case "templates":
->> dir, _ := os.UserConfigDir()
->> tplFile := filepath.Join(dir, "niimbot", "templates.json")
->> data, err := os.ReadFile(tplFile)
->> if err != nil {
->> fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
->> return
->> }
->> var list []SavedTemplate
->> if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
->> fmt.Println("Сохранённых шаблонов пока нет.")
->> return
->> }
->> fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
->> for i, t := range list {
->> fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
->> }
->>
->> case "template":
->> if len(args) == 0 {
->> fatal(fmt.Errorf("укажите имя шаблона или путь к .niimbot.json"))
->> }
->> '@
-PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> $mergedCase = @'
->> case "template":
->> if len(args) == 0 {
+PS C:\dev\NiimBcLite> $listCode = @'
 >> dir, _ := os.UserConfigDir()
 >> tplFile := filepath.Join(dir, "niimbot", "templates.json")
 >> data, err := os.ReadFile(tplFile)
@@ -51,10 +24,9 @@ PS C:\dev\NiimBcLite> $mergedCase = @'
 >> fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
 >> }
 >> return
->> }
 >> '@
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> $mc = $mc.Replace($oldCases, $mergedCase)
+PS C:\dev\NiimBcLite> $mc = $mc.Replace('fatal(fmt.Errorf("укажите имя шаблона или путь к .niimbot.json"))', $listCode)
 PS C:\dev\NiimBcLite> [IO.File]::WriteAllText($mp, $mc, $u)
 PS C:\dev\NiimBcLite> gofmt -w main.go
 PS C:\dev\NiimBcLite>
@@ -62,22 +34,32 @@ PS C:\dev\NiimBcLite> go test -v ./...
 === RUN   TestResolveFastLabelPriority
 --- PASS: TestResolveFastLabelPriority (0.00s)
 === RUN   TestLiteBarcodeAndTemplateRender
---- PASS: TestLiteBarcodeAndTemplateRender (0.10s)
+--- PASS: TestLiteBarcodeAndTemplateRender (0.14s)
 PASS
-ok      github.com/NDeman81/NiimBcLite  (cached)
+ok      github.com/NDeman81/NiimBcLite  2.019s
 PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> # Проверяем: вызов template без параметров показывает список шаблонов
 PS C:\dev\NiimBcLite> .\niimbc-cli.exe template
-[2026-11-22 23:01:46.119] [ERR] укажите имя шаблона или путь к .niimbot.json
+Сохранённые шаблоны (C:\Users\Deman\AppData\Roaming\niimbot\templates.json):
+  1. ТестШаблона (длина: 50 мм, элементов: 0)
+  2. Штрихкод с двумя полями (длина: 50 мм, элементов: 3)
+  3. Тестовый Штрихкод С Двумя текстами (длина: 50 мм, элементов: 3)
+  4. TestTemplate (длина: 50 мм, элементов: 0)
+  5. TestTemplateFull (длина: 50 мм, элементов: 0)
+  6. TestShablonFull (длина: 50 мм, элементов: 3)
+  7. TestShablonFullNew (длина: 50 мм, элементов: 3)
+  8. CounterTest (длина: 50 мм, элементов: 1)
+  9. TestNew (длина: 50 мм, элементов: 3)
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> $RelDir = "$Dst\_Release"
 PS C:\dev\NiimBcLite> Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -DestinationPath "$RelDir\NiimBcLite_v1.0.0_win64.zip" -Force
 PS C:\dev\NiimBcLite>
 PS C:\dev\NiimBcLite> git add -A
-PS C:\dev\NiimBcLite> git commit -m "CLI: list saved templates when 'template' command is invoked without arguments"
-[main 3e426a7] CLI: list saved templates when 'template' command is invoked without arguments
- 2 files changed, 36 insertions(+), 59 deletions(-)
+warning: in the working copy of 'main.go', LF will be replaced by CRLF the next time Git touches it
+PS C:\dev\NiimBcLite> git commit -m "CLI: output saved templates list on 'niimbc-cli template' without args"
+[main 4f9ee4e] CLI: output saved templates list on 'niimbc-cli template' without args
+ 3 files changed, 75 insertions(+), 51 deletions(-)
 PS C:\dev\NiimBcLite> git tag -f v1.0.0
-Updated tag 'v1.0.0' (was 0503713)
+Updated tag 'v1.0.0' (was 3e426a7)
 PS C:\dev\NiimBcLite>
