@@ -24,8 +24,9 @@ Private Function RunNiimCliUTF8(ByVal cliArgs As String, Optional ByRef outText 
     stm.WriteText """" & CLI_EXE_PATH & """ " & cliArgs & " > """ & tmpLog & """ 2>&1" & vbCrLf
     stm.WriteText "exit /b %ERRORLEVEL%" & vbCrLf
 
-    stm.Position = 3
+    stm.Position = 0
     stm.Type = 1
+    stm.Position = 3
     binData = stm.Read
     stm.Close
 
