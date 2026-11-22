@@ -5,3 +5,4 @@ niimbc-cli.exe
 *.xlsm
 *.xlsb
 ~$*.xls*
+*.7z
