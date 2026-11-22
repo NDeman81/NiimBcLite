@@ -578,26 +578,36 @@ func fatal(err error) {
 }
 
 func printUsage() {
-	fmt.Println(`niimbc-cli — быстрая консольная печать для NIIMBOT N1
+	fmt.Println(`niimbc-cli - fast CLI single-label printer for NIIMBOT N1
 
-Команды:
-  scan                                  Найти принтер и сохранить адрес в config.json
-  info                                  Принудительно опросить модель, заряд и RFID расходников
+Commands:
+  scan                                  Scan for printer and save MAC address to config.json
+  info                                  Query printer status, battery and RFID consumables
   barcode "DATA"                        Print a single barcode or 2D code
   text "Line 1" ["Line 2"]              Print a text label
-  image файл.png                        Напечатать картинку (PNG/JPEG/GIF)
+  image file.png                        Print an image (PNG/JPEG/GIF)
+  template                              List all saved templates
   template "Name" ["col1;col2"]         Print a single label using a saved or .niimbot.json template
-  preview barcode|text|image|template   Сохранить PNG-макет без подключения к принтеру (--out)
+  preview barcode|text|image|template   Render PNG preview without connecting to printer (--out)
 
-Флаги (указываются перед командой):
-  --length 50        Длина этикетки в мм (по умолчанию из config.json)
-  --format auto      Формат: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr
-  --top "Text"       Top caption for barcode
-  --bot "Text"       Bottom caption for barcode
-  --safe             Безопасный режим штрихкода
-  --label withgaps   Тип labels (по умолчанию withgaps; auto — по RFID)
-  --copies 1         Количество копий
-  --out label.png    Путь сохранения PNG для preview
-  --quiet            Тихий режим (выводить только ошибки)
-  --save-config      Сохранить переданные флаги в config.json`)
+Flags (place before command):
+  --length 50          Label length in mm (default from config.json)
+  --format auto        Code format: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr
+  --top "Text"         Top caption for barcode
+  --bot "Text"         Bottom caption for barcode
+  --safe               Enable barcode safe mode
+  --font-name "Arial"  Font family name (e.g. Arial, Times New Roman, Segoe UI)
+  --font-size -1       Main text size (-1=auto, 0=hide, only_text, 24, 30p)
+  --bold               Bold main text
+  --margin 4           Top/bottom margin in px
+  --side-margin 8      Left/right margin in px
+  --gap 2              Gap between barcode and main text in px
+  --text-gap 2         Gap between top/bottom captions and center in px
+  --offset 0           Horizontal offset in px
+  --label withgaps     Label type (default: withgaps; auto = read RFID)
+  --copies 1           Number of copies
+  --out label.png      Output PNG path for preview
+  --cp1251             Decode input arguments from Windows-1251 (CP1251)
+  --quiet              Quiet mode (errors only)
+  --save-config        Save passed flags to config.json`)
 }

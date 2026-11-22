@@ -55,3 +55,18 @@ Private Sub btnPreview_Click()
     Niim_ShowTemplateOnForm Me.imgPreview, Me.cmbTemplate.Value, Me.txtField1.Value, Me.txtField2.Value, Me.txtField3.Value
 End Sub
 ```
+
+### 6. Печать одиночного штрихкода из Excel с настройкой шрифта, отступов и зазоров
+```vb
+Public Sub PrintCustomStyledBarcode()
+    Dim cmd As String, logOut As String, rc As Long
+    cmd = "--quiet --safe --length 50 --format code128 " & _
+          "--font-name ""Times New Roman"" --font-size ""22"" --bold " & _
+          "--margin 6 --side-margin 14 --gap 4 --text-gap 3 " & _
+          "--top " & EscArg(ActiveCell.Offset(0, 1).Value) & " " & _
+          "--bot " & EscArg(ActiveCell.Offset(0, 2).Value) & " " & _
+          "barcode " & EscArg(ActiveCell.Value)
+    rc = RunNiimCliUTF8(cmd, logOut)
+    If rc <> 0 Then MsgBox "Ошибка печати: " & logOut, vbCritical, "NiimBcLite"
+End Sub
+```
