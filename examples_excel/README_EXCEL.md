@@ -1,21 +1,50 @@
-# Интеграция `NiimBcLite` (`niimbc-cli.exe`) с Microsoft Excel (VBA)
+# Интеграция `NiimBcLite` (`niimbc-cli.exe`) с Microsoft Excel (VBA и UserForm)
 
-В этой папке находится готовый VBA-модуль **`NiimBcLite_Macros.bas`** для прямой одиночной печати этикеток из таблиц Excel (`.xlsm`).
+Модуль **`NiimBcLite_Macros.bas`** поддерживает работу как с ячейками листа Excel, так и с пользовательскими формами (`UserForm`).
 
-## Как подключить за 1 минуту
-1. Откройте вашу таблицу Excel и нажмите **`Alt + F11`** (откроется редактор VBA).
-2. В меню выберите **`File` -> `Import File...`** (`Файл` -> `Импортировать файл...`) и укажите **`NiimBcLite_Macros.bas`**.
-3. В начале модуля проверьте две константы:
-   - `CLI_EXE_PATH` — путь к `niimbc-cli.exe` (по умолчанию `C:\dev\NiimBcLite\niimbc-cli.exe`);
-   - `DEFAULT_TEMPLATE` — имя вашего шаблона из Конструктора (например, `"TestShablonFullNew"`).
-4. На листе Excel добавьте кнопку (**Вставка -> Фигуры** или **Разработчик -> Вставить -> Кнопка**), нажмите на неё правой кнопкой -> **Назначить макрос** и выберите нужный сценарий:
-   - **`Niim_PrintActiveRowTemplate`** — печатает выделенную строку (`A`, `B`, `C`...) по шаблону;
-   - **`Niim_PrintActiveCellBarcode`** — печатает штрихкод из выделенной ячейки (и подпись из соседней ячейки справа);
-   - **`Niim_PrintActiveRowText`** — печатает ячейки `A` и `B` текущей строки как текстовую этикетку;
-   - **`Niim_PreviewActiveRow`** — открывает PNG-предпросмотр текущей строки на экране без расхода ленты;
-   - **`Niim_CheckPrinterInfo`** — показывает заряд батареи и остаток ленты/риббона по RFID.
-5. Сохраните книгу в формате **Книга Excel с поддержкой макросов (`.xlsm`)**.
+## Подключение модуля
+1. Откройте книгу Excel и нажмите **`Alt + F11`**.
+2. Выберите **`File` -> `Import File...`** и укажите **`NiimBcLite_Macros.bas`**.
+3. Проверьте константу `CLI_EXE_PATH` в начале модуля (`C:\dev\NiimBcLite\niimbc-cli.exe`).
 
-## Особенности реализации
-- Макрос автоматически передаёт аргументы через временный UTF-8 `.cmd`-скрипт (`chcp 65001`), поэтому **русский текст, названия товаров и складов передаются без искажения кодировки**.
-- Вызов выполняется в скрытом окне (`--quiet`), не мешая работе пользователя в таблице.
+---
+
+## Примеры использования 5 функций
+
+### 1. Заполнение столбца таблицы списком шаблонов
+```vb
+' Заполнить столбец E начиная со 2-й строки на активном листе:
+Niim_FillColumnWithTemplates ActiveSheet, "E", 2
+```
+*(Также доступна готовая кнопка-макрос `Demo_FillColumnE_WithTemplates`.)*
+
+### 2. Заполнение раскрывающегося списка (`ComboBox`) на форме (`UserForm`)
+```vb
+Private Sub UserForm_Initialize()
+    Niim_FillComboWithTemplates Me.cmbTemplate
+End Sub
+```
+
+### 3. Вставка изображения штрихкода в указанную ячейку таблицы
+```vb
+' Вставить штрихкод в ячейку D2 (с пропорциональным вписыванием в границы ячейки):
+Niim_InsertBarcodeToCell ActiveSheet.Range("D2"), ActiveSheet.Range("A2").Value, "code128", ActiveSheet.Range("B2").Value
+```
+*(Также доступна готовая кнопка-макрос `Demo_InsertBarcodeNextCell`, вставляющая штрихкод из активной ячейки в ячейку справа.)*
+
+### 4. Вывод изображения штрихкода в элемент `Image` на форме (`UserForm`)
+```vb
+Private Sub txtBarcode_Change()
+    Niim_ShowBarcodeOnForm Me.imgPreview, Me.txtBarcode.Value, "auto", Me.txtCaption.Value
+End Sub
+```
+*(PNG прозрачно конвертируется в BMP через встроенный компонент Windows WIA и масштабируется внутри `imgPreview`.)*
+
+### 5. Печать этикетки по нажатию кнопки на форме (`UserForm`)
+```vb
+Private Sub btnPrint_Click()
+    If Niim_PrintFromForm(Me.cmbTemplate.Value, CLng(Me.txtCopies.Value), Me.txtBarcode.Value, Me.txtTitle.Value, Me.txtLocation.Value) Then
+        MsgBox "Этикетка отправлена на печать!", vbInformation
+    End If
+End Sub
+```
