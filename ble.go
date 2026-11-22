@@ -71,7 +71,7 @@ type Printer struct {
 
 // printErrors — расшифровка кодов ошибки печати (ответ 0xdb).
 var printErrors = map[byte]string{
-	0x01: "открыта крышка",
+	0x01: "cover open",
 	0x02: "нет бумаги",
 	0x03: "низкий заряд батареи",
 	0x04: "исключение батареи",
@@ -85,7 +85,7 @@ var printErrors = map[byte]string{
 	0x0c: "головка не закреплена",
 	0x0d: "нет ленты (риббона)",
 	0x0e: "неподходящая лента",
-	0x11: "закончился риббон (красящая лента)",
+	0x11: "out of ribbon",
 }
 
 func (p *Printer) log(format string, args ...any) {
@@ -133,7 +133,7 @@ func ConnectMAC(mac string, verbose, freshDiscovery bool) (*Printer, error) {
 		}
 	}
 
-	p.log("Подключаюсь к %s …", mac)
+	p.log("Connecting to %s...", mac)
 
 	// Подключение выносим в горутину с таймаутом: у Linux-бэкенда вызов
 	// может «зависнуть» на D-Bus, если устройство не отвечает (например,
@@ -164,7 +164,7 @@ func ConnectMAC(mac string, verbose, freshDiscovery bool) (*Printer, error) {
 	}
 
 	p.device = dev
-	p.log("  соединение установлено")
+	p.log("  Connected")
 	if err := p.setup(); err != nil {
 		dev.Disconnect()
 		return nil, err
@@ -313,7 +313,7 @@ func (p *Printer) setup() error {
 		return fmt.Errorf("не нашёл характеристику принтера (нужен сервис %s)", bleServiceUUID)
 	}
 	p.char = *target
-	p.log("  характеристика: %s", p.char.UUID().String())
+	p.log("  Characteristic: %s", p.char.UUID().String())
 
 	return p.char.EnableNotifications(func(buf []byte) {
 		p.mu.Lock()
@@ -332,7 +332,7 @@ func (p *Printer) setup() error {
 				if why == "" {
 					why = "неизвестный код"
 				}
-				p.log("  ⚠️ принтер сообщил об ошибке: %s (0x%02x)", why, pkt.Data[0])
+				p.log("  ⚠️ printer error: %s (0x%02x)", why, pkt.Data[0])
 			}
 			p.mu.Lock()
 			ws := p.waiters
@@ -635,7 +635,7 @@ func (p *Printer) PrintPages(pages [][]Row, density, labelType byte, copies int,
 		}
 	}
 	total := len(flat)
-	p.log("  серия: %d этикеток (%d шаблонов × %d копий), плотность %d, тип %d",
+	p.log("  Job: %d labels (%d templates x %d copies), density %d, type %d",
 		total, len(pages), copies, density, labelType)
 
 	p.mu.Lock(); p.printingNow = true; p.mu.Unlock(); defer func() { p.mu.Lock(); p.printingNow = false; p.mu.Unlock() }(); p.beginJob(total, density, labelType); if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }
@@ -655,7 +655,7 @@ func (p *Printer) PrintPages(pages [][]Row, density, labelType byte, copies int,
 			progress(i+1, total)
 		}
 	}
-	p.log("  данные серии отправлены за %.1fs", time.Since(t0).Seconds())
+	p.log("  Job data sent in %.1fs", time.Since(t0).Seconds())
 	return p.waitFinished(total)
 }
 
@@ -711,7 +711,7 @@ func (p *Printer) waitPageDone(timeout time.Duration) error {
 // Поэтому завершением считаем 100 % печати и подачи, а не номер страницы —
 // иначе серия никогда не «завершается» и драйвер висит до таймаута.
 func (p *Printer) waitFinished(pages int) error {
-	p.log("  ожидаю завершения печати (страниц в задании: %d) …", pages)
+	p.log("  Waiting for print completion (%d pages)...", pages)
 	deadline := time.Now().Add(120 * time.Second)
 	lastPg, lastPct := -1, -1
 	for time.Now().Before(deadline) {
@@ -726,11 +726,11 @@ func (p *Printer) waitFinished(pages int) error {
 			pg := int(pkt.Data[0])<<8 | int(pkt.Data[1])
 			printed, fed := int(pkt.Data[2]), int(pkt.Data[3])
 			if pg != lastPg || printed != lastPct {
-				p.log("    статус: страница %d, печать %d%%, подача %d%%", pg, printed, fed)
+				p.log("    Status: page %d, print %d%%, feed %d%%", pg, printed, fed)
 				lastPg, lastPct = pg, printed
 			}
 			if pg >= 1 && printed >= 100 && fed >= 100 {
-				p.log("  ✅ печать завершена (страница %d, 100%%)", pg)
+				p.log("  ✅ Print completed (page %d, 100%%)", pg)
 				return nil
 			}
 		}

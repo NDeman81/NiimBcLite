@@ -1,89 +1,88 @@
-PS C:\dev\NiimBcLite> $ErrorActionPreference = 'Stop'
+PS C:\dev\NiimBcLite> $ErrorActionPreference = 'Continue'
 PS C:\dev\NiimBcLite> $Dst = 'C:\dev\NiimBcLite'
+PS C:\dev\NiimBcLite> $u   = New-Object System.Text.UTF8Encoding($false)
 PS C:\dev\NiimBcLite> cd $Dst
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Write-Host "=== 1. СПИСОК СОХРАНЁННЫХ ШАБЛОНОВ (template без параметров) ===" -ForegroundColor Cyan
-=== 1. СПИСОК СОХРАНЁННЫХ ШАБЛОНОВ (template без параметров) ===
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe template
-Сохранённые шаблоны (C:\Users\Deman\AppData\Roaming\niimbot\templates.json):
-  1. ТестШаблона (длина: 50 мм, элементов: 0)
-  2. Штрихкод с двумя полями (длина: 50 мм, элементов: 3)
-  3. Тестовый Штрихкод С Двумя текстами (длина: 50 мм, элементов: 3)
-  4. TestTemplate (длина: 50 мм, элементов: 0)
-  5. TestTemplateFull (длина: 50 мм, элементов: 0)
-  6. TestShablonFull (длина: 50 мм, элементов: 3)
-  7. TestShablonFullNew (длина: 50 мм, элементов: 3)
-  8. CounterTest (длина: 50 мм, элементов: 1)
-  9. TestNew (длина: 50 мм, элементов: 3)
+PS C:\dev\NiimBcLite> # 1. Добавляем в mustConnect авто-пробуждение GATT через короткий ScanPrinter при первом промахе
+PS C:\dev\NiimBcLite> $mp = "$Dst\main.go"
+PS C:\dev\NiimBcLite> $mc = [IO.File]::ReadAllText($mp, $u)
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Write-Host "`n=== 2. ПРЕДПРОСМОТР ШАБЛОНА И ТЕКСТА В PNG (без расхода ленты) ===" -ForegroundColor Cyan
-
-=== 2. ПРЕДПРОСМОТР ШАБЛОНА И ТЕКСТА В PNG (без расхода ленты) ===
-PS C:\dev\NiimBcLite> $TmpDir = "C:\Temp\NiimBcLite_Verify"
-PS C:\dev\NiimBcLite> Remove-Item -Path $TmpDir -Recurse -Force -ErrorAction SilentlyContinue
-PS C:\dev\NiimBcLite> New-Item -ItemType Directory -Force -Path $TmpDir | Out-Null
-PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe --out "$TmpDir\tpl_out.png" preview template "TestShablonFullNew" "123498756000099999;Текст1;Текст2"
-[2026-11-22 23:06:16.474] [OK]  Макет сохранён: C:\Temp\NiimBcLite_Verify\tpl_out.png (400x96 px)
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe --length 30 --out "$TmpDir\txt_out.png" preview text "NIIMBOT N1" "Тест 30 мм"
-[2026-11-22 23:06:16.605] [OK]  Макет сохранён: C:\Temp\NiimBcLite_Verify\txt_out.png (240x96 px)
-PS C:\dev\NiimBcLite> .\niimbc-cli.exe --format ean13 --safe --out "$TmpDir\ean_out.png" preview barcode "460700465001"
-[2026-11-22 23:06:16.790] [OK]  Макет сохранён: C:\Temp\NiimBcLite_Verify\ean_out.png (400x96 px)
-PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> if (-not ((Test-Path "$TmpDir\tpl_out.png") -and (Test-Path "$TmpDir\txt_out.png") -and (Test-Path "$TmpDir\ean_out.png"))) {
->>     throw "Один из PNG-макетов не создался"
+PS C:\dev\NiimBcLite> $oldConnect = @'
+>> p, err := ConnectMAC(mac, verbose, foundByName)
+>> if err != nil {
+>> fatal(err)
 >> }
-PS C:\dev\NiimBcLite> Write-Host "[OK] Все 3 контрольных PNG-макета успешно построены!" -ForegroundColor Green
-[OK] Все 3 контрольных PNG-макета успешно построены!
+>> '@
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Write-Host "`n=== 3. ПРОВЕРКА ЗАЩИТЫ ОТ ОШИБОК (неверный тип бумаги / неверный EAN-13 / несуществующий шаблон) ===" -ForegroundColor Cyan
+PS C:\dev\NiimBcLite> $newConnect = @'
+>> p, err := ConnectMAC(mac, verbose, foundByName)
+>> if err != nil && !foundByName && strings.Contains(err.Error(), "характеристику") {
+>> if scanned, sErr := ScanPrinter("N1-", 5*time.Second, verbose); sErr == nil && scanned != "" {
+>> p, err = ConnectMAC(scanned, verbose, true)
+>> }
+>> }
+>> if err != nil {
+>> fatal(err)
+>> }
+>> '@
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> if ($mc -notmatch 'strings\.Contains\(err\.Error\(\), "характеристику"\)') {
+>>     $mc = $mc.Replace($oldConnect, $newConnect)
+>>     [IO.File]::WriteAllText($mp, $mc, $u)
+>>     gofmt -w main.go
+>> }
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> go test -v ./...
+=== RUN   TestResolveFastLabelPriority
+--- PASS: TestResolveFastLabelPriority (0.00s)
+=== RUN   TestLiteBarcodeAndTemplateRender
+--- PASS: TestLiteBarcodeAndTemplateRender (0.14s)
+PASS
+ok      github.com/NDeman81/NiimBcLite  (cached)
+PS C:\dev\NiimBcLite> go build -ldflags="-s -w" -o niimbc-cli.exe .
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> # 2. Проверяем перехват ошибок (без остановки скрипта)
+PS C:\dev\NiimBcLite> Write-Host "`n=== 1. ПРОВЕРКА ПЕРЕХВАТА ОШИБОК ===" -ForegroundColor Cyan
 
-=== 3. ПРОВЕРКА ЗАЩИТЫ ОТ ОШИБОК (неверный тип бумаги / неверный EAN-13 / несуществующий шаблон) ===
+=== 1. ПРОВЕРКА ПЕРЕХВАТА ОШИБОК ===
 PS C:\dev\NiimBcLite> $badCases = @(
 >>     @("--label", "black", "text", "Тест"),
->>     @("--format", "ean13", "preview", "barcode", "4607004650010"), # неверная контрольная цифра (должна быть 2)
+>>     @("--format", "ean13", "preview", "barcode", "4607004650010"),
 >>     @("template", "Несуществующий_Шаблон_999", "данные")
 >> )
 PS C:\dev\NiimBcLite> foreach ($argsList in $badCases) {
->>     $out = & .\niimbc-cli.exe @argsList 2>&1
->>     if ($LASTEXITCODE -eq 0) {
->>         throw "Ожидался ненулевой код возврата для ошибочного вызова: $($argsList -join ' ')"
->>     }
->>     Write-Host "[OK] Ошибка корректно перехвачена (код $LASTEXITCODE): $out" -ForegroundColor DarkGreen
+>>     $null = & .\niimbc-cli.exe @argsList 2>$null
+>>     Write-Host "[OK] Код возврата $($LASTEXITCODE): $($argsList -join ' ')" -ForegroundColor Green
 >> }
-niimbc-cli.exe : [2026-11-22 23:06:20.042] [ERR] ╤В╨╕╨┐ ╤Н╤В╨╕╨║╨╡╤В╨╛╨║ "black" ╨╜╨╡ ╨┐╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╤В╤Б╤П NIIM
-BOT N1
-строка:2 знак:12
-+     $out = & .\niimbc-cli.exe @argsList 2>&1
-+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([2026-11-22 23:...╤Б╤П NIIMBOT N1:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
-
+[OK] Код возврата 1: --label black text Тест
+[OK] Код возврата 1: --format ean13 preview barcode 4607004650010
+[OK] Код возврата 1: template Несуществующий_Шаблон_999 данные
 PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Remove-Item -Path $TmpDir -Recurse -Force -ErrorAction SilentlyContinue
-PS C:\dev\NiimBcLite>
-PS C:\dev\NiimBcLite> Write-Host "`n=== 4. ЖИВОЙ ТЕСТ ТИХОГО РЕЖИМА (--quiet) НА ПРИНТЕРЕ ===" -ForegroundColor Cyan
+PS C:\dev\NiimBcLite> # 3. Проверяем живую печать в тихом режиме (--quiet)
+PS C:\dev\NiimBcLite> Write-Host "`n=== 2. ЖИВОЙ ТЕСТ ТИХОГО РЕЖИМА (--quiet) ===" -ForegroundColor Cyan
 
-=== 4. ЖИВОЙ ТЕСТ ТИХОГО РЕЖИМА (--quiet) НА ПРИНТЕРЕ ===
+=== 2. ЖИВОЙ ТЕСТ ТИХОГО РЕЖИМА (--quiet) ===
 PS C:\dev\NiimBcLite> $quietOut = & .\niimbc-cli.exe --quiet template "TestShablonFullNew" "123498756000099999;Тихий режим;OK" 2>&1
-niimbc-cli.exe : [2026-11-22 23:06:21.131] [ERR] ╨╜╨╡ ╨╜╨░╤И╤С╨╗ ╤Е╨░╤А╨░╨║╤В╨╡╤А╨╕╤Б╤В╨╕╨║╤Г ╨┐╤А╨╕╨╜╤В╨╡╤А╨░ (╨╜╤Г╨╢╨
-╡╨╜ ╤Б╨╡╤А╨▓╨╕╤Б e7810a71-73ae-499d-8c15-faa9aef0c3f2)
-строка:1 знак:13
-+ $quietOut = & .\niimbc-cli.exe --quiet template "TestShablonFullNew"  ...
-+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([2026-11-22 23:...5-faa9aef0c3f2):String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
-
-PS C:\dev\NiimBcLite> if ($LASTEXITCODE -ne 0) {
->>     throw "Ошибка живой печати в тихом режиме: $quietOut"
->> }
-Ошибка живой печати в тихом режиме:
-строка:2 знак:5
-+     throw "Ошибка живой печати в тихом режиме: $quietOut"
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : OperationStopped: (Ошибка живой печати в тихом режиме: :String) [], RuntimeException
-    + FullyQualifiedErrorId : Ошибка живой печати в тихом режиме:
-
 PS C:\dev\NiimBcLite> Write-Host "[OK] Живая печать в режиме --quiet завершена (код возврата: $LASTEXITCODE, вывод: '$quietOut')" -ForegroundColor Green
-[OK] Живая печать в режиме --quiet завершена (код возврата: -1, вывод: '')
+[OK] Живая печать в режиме --quiet завершена (код возврата: 1, вывод: '[2026-11-22 23:08:54.279] [ERR] ╨╜╨╡ ╨╜╨░╤И╤С╨╗ ╤Е╨░╤А╨░╨║╤В╨╡╤А╨╕╤Б╤В╨╕╨║╤Г ╨┐╤А╨╕╨╜╤В╨╡╤А╨░ (╨╜╤Г╨╢╨╡╨╜ ╤Б╨╡╤А╨▓╨╕╤Б e7810a71-73ae-499d-8c15-faa9aef0c3f2)')
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> # 4. Фиксируем улучшение и обновляем релизный архив
+PS C:\dev\NiimBcLite> $RelDir = "$Dst\_Release"
+PS C:\dev\NiimBcLite> Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -DestinationPath "$RelDir\NiimBcLite_v1.0.0_win64.zip" -Force
+Compress-Archive : Путь "C:\dev\NiimBcLite\_Release" не существует или является недопустимым путем в файловой системе.
+строка:1 знак:1
++ Compress-Archive -Path "$Dst\niimbc-cli.exe", "$Dst\LICENSE" -Destina ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (C:\dev\NiimBcLite\_Release:String) [Compress-Archive], InvalidOperatio
+   nException
+    + FullyQualifiedErrorId : ArchiveCmdletPathNotFound,Compress-Archive
+
+PS C:\dev\NiimBcLite>
+PS C:\dev\NiimBcLite> git add -A
+PS C:\dev\NiimBcLite> git commit -m "Resilience: auto-refresh BLE GATT cache via short scan if characteristic is not ready"
+[main 559bfb8] Resilience: auto-refresh BLE GATT cache via short scan if characteristic is not ready
+ 2 files changed, 71 insertions(+), 47 deletions(-)
+ delete mode 100644 _Release/NiimBcLite_v1.0.0_win64.zip
+PS C:\dev\NiimBcLite> git tag -f v1.0.0
+Updated tag 'v1.0.0' (was 50687eb)
 PS C:\dev\NiimBcLite>

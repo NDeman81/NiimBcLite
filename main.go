@@ -128,7 +128,7 @@ func main() {
 		if err := SaveConfig(cfg); err != nil {
 			fatal(err)
 		}
-		LogKey("Настройки сохранены в config.json")
+		LogKey("Settings saved to config.json")
 		if len(posArgs) == 0 {
 			return
 		}
@@ -159,7 +159,7 @@ func main() {
 			cfg.Label = "withgaps"
 		}
 		_ = SaveConfig(cfg)
-		LogKey("Принтер найден: %s (тип этикеток: %s) — сохранено в config.json", mac, cfg.Label)
+		LogKey("Printer found: %s (label type: %s) - saved to config.json", mac, cfg.Label)
 
 	case "info":
 		p := mustConnect(cfg, !*quietFlag)
@@ -168,22 +168,22 @@ func main() {
 		if err != nil {
 			fatal(err)
 		}
-		fmt.Printf("Модель: %d | S/N: %s | Прошивка: %s | Заряд: %d\n", info.ModelID, info.Serial, info.Firmware, info.Battery)
+		fmt.Printf("Model: %d | S/N: %s | Firmware: %s | Battery: %d\n", info.ModelID, info.Serial, info.Firmware, info.Battery)
 		for _, isRib := range []bool{false, true} {
-			name := "Рулон этикеток"
+			name := "Label roll"
 			if isRib {
-				name = "Риббон (лента)"
+				name = "Ribbon"
 			}
 			if rf, err := p.ReadRfid(isRib); err == nil && rf.TagPresent {
-				fmt.Printf("%s: тип=%s, всего=%d, использовано=%d, осталось=%d\n", name, rf.LabelTypeName(), rf.AllPaper, rf.UsedPaper, rf.Leftover())
+				fmt.Printf("%s: type=%s, total=%d, used=%d, remaining=%d\n", name, rf.LabelTypeName(), rf.AllPaper, rf.UsedPaper, rf.Leftover())
 			} else {
-				fmt.Printf("%s: метка не обнаружена\n", name)
+				fmt.Printf("%s: no RFID tag detected\n", name)
 			}
 		}
 
 	case "barcode":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("укажите данные штрихкода"))
+			fatal(fmt.Errorf("missing barcode data"))
 		}
 		img, err := RenderBarcodeLabel(BarcodeOptions{
 			Data: args[0], Format: cfg.BcFormat, LengthMM: cfg.Length,
@@ -200,7 +200,7 @@ func main() {
 
 	case "text":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("укажите текст этикетки"))
+			fatal(fmt.Errorf("missing text lines этикетки"))
 		}
 		img, err := RenderTextWithOptions(args, cfg.Length, buildTextOptionsFromConfig())
 		if err != nil {
@@ -210,7 +210,7 @@ func main() {
 
 	case "image":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("укажите путь к файлу картинки"))
+			fatal(fmt.Errorf("missing image file path"))
 		}
 		img, err := loadAndFitImage(args[0], cfg)
 		if err != nil {
@@ -223,17 +223,17 @@ func main() {
 		tplFile := filepath.Join(dir, "niimbot", "templates.json")
 		data, err := os.ReadFile(tplFile)
 		if err != nil {
-			fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+			fmt.Printf("Templates file not found (%s)\n", tplFile)
 			return
 		}
 		var list []SavedTemplate
 		if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
-			fmt.Println("Сохранённых шаблонов пока нет.")
+			fmt.Println("No saved templates found.")
 			return
 		}
-		fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+		fmt.Printf("Saved templates (%s):\n", tplFile)
 		for i, t := range list {
-			fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+			fmt.Printf("  %d. %s (length: %.0f mm, elements: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
 		}
 	case "template":
 		if len(args) == 0 {
@@ -241,17 +241,17 @@ func main() {
 			tplFile := filepath.Join(dir, "niimbot", "templates.json")
 			data, err := os.ReadFile(tplFile)
 			if err != nil {
-				fmt.Printf("Файл шаблонов пока не создан (%s)\n", tplFile)
+				fmt.Printf("Templates file not found (%s)\n", tplFile)
 				return
 			}
 			var list []SavedTemplate
 			if err := json.Unmarshal(data, &list); err != nil || len(list) == 0 {
-				fmt.Println("Сохранённых шаблонов пока нет.")
+				fmt.Println("No saved templates found.")
 				return
 			}
-			fmt.Printf("Сохранённые шаблоны (%s):\n", tplFile)
+			fmt.Printf("Saved templates (%s):\n", tplFile)
 			for i, t := range list {
-				fmt.Printf("  %d. %s (длина: %.0f мм, элементов: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
+				fmt.Printf("  %d. %s (length: %.0f mm, elements: %d)\n", i+1, t.Name, t.Length, len(t.Elements))
 			}
 			return
 		}
@@ -267,7 +267,7 @@ func main() {
 
 	case "preview":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("укажите команду для preview: barcode | text | image | template"))
+			fatal(fmt.Errorf("specify preview target: barcode | text | image | template"))
 		}
 		outPath := strings.TrimSpace(*outFlag)
 		if outPath == "" {
@@ -280,7 +280,7 @@ func main() {
 		if err := saveGrayPng(outPath, BinarizeAt(img, uint8(cfg.Threshold))); err != nil {
 			fatal(err)
 		}
-		LogKey("Макет сохранён: %s (%dx%d px)", outPath, img.Bounds().Dx(), img.Bounds().Dy())
+		LogKey("Preview saved: %s (%dx%d px)", outPath, img.Bounds().Dx(), img.Bounds().Dy())
 
 	default:
 		printUsage()
@@ -300,19 +300,19 @@ func resolveFastLabel(p *Printer, tplLabel string, cfg AppConfig) (string, error
 	if cand == "auto" {
 		rf, err := p.ReadRfid(false)
 		if err != nil {
-			return "", fmt.Errorf("не удалось прочитать метку рулона: %w", err)
+			return "", fmt.Errorf("failed to read label RFID: %w", err)
 		}
 		if !rf.TagPresent {
-			return "", fmt.Errorf("метка рулона не найдена; укажите тип явно (--label withgaps)")
+			return "", fmt.Errorf("no label RFID tag found; specify label type explicitly (--label withgaps)")
 		}
 		cand = rf.LabelTypeName()
 	}
 	lt, ok := labelTypes[cand]
 	if !ok {
-		return "", fmt.Errorf("неизвестный тип этикеток %q", cand)
+		return "", fmt.Errorf("unknown label type %q", cand)
 	}
 	if lt != 1 && lt != 3 && lt != 5 && lt != 10 && lt != 11 {
-		return "", fmt.Errorf("тип этикеток %q не поддерживается NIIMBOT N1", cand)
+		return "", fmt.Errorf("label type %q is not supported by NIIMBOT N1", cand)
 	}
 	return cand, nil
 }
@@ -362,7 +362,7 @@ func loadAndFitImage(path string, cfg AppConfig) (*image.Gray, error) {
 	defer func() { _ = f.Close() }()
 	src, _, err := image.Decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("неподдерживаемый формат картинки: %w", err)
+		return nil, fmt.Errorf("unsupported image format: %w", err)
 	}
 	res := FitToLabelEx(src, cfg.Length, cfg.MarginPx, cfg.SideMarginPx, cfg.ImgStretch)
 	if cfg.OffsetPx != 0 {
@@ -389,7 +389,7 @@ func findTemplateByNameOrPath(nameOrPath string) (*SavedTemplate, error) {
 	tplFile := filepath.Join(dir, "niimbot", "templates.json")
 	data, err := os.ReadFile(tplFile)
 	if err != nil {
-		return nil, fmt.Errorf("шаблон %q не найден ни как файл, ни в %s", nameOrPath, tplFile)
+		return nil, fmt.Errorf("template %q not found as file or in %s", nameOrPath, tplFile)
 	}
 	var list []SavedTemplate
 	if err := json.Unmarshal(data, &list); err != nil {
@@ -401,7 +401,7 @@ func findTemplateByNameOrPath(nameOrPath string) (*SavedTemplate, error) {
 			return &cp, nil
 		}
 	}
-	return nil, fmt.Errorf("шаблон %q не найден в templates.json", nameOrPath)
+	return nil, fmt.Errorf("template %q not found in templates.json", nameOrPath)
 }
 
 func splitRowColumns(s string) []string {
@@ -474,7 +474,7 @@ func buildPreviewAny(subCmd string, args []string, top, bot string, cfg AppConfi
 	switch strings.ToLower(subCmd) {
 	case "barcode":
 		if len(args) == 0 {
-			return nil, fmt.Errorf("укажите данные штрихкода")
+			return nil, fmt.Errorf("missing barcode data")
 		}
 		return RenderBarcodeLabel(BarcodeOptions{
 			Data: args[0], Format: cfg.BcFormat, LengthMM: cfg.Length,
@@ -486,17 +486,17 @@ func buildPreviewAny(subCmd string, args []string, top, bot string, cfg AppConfi
 		}, cfg)
 	case "text":
 		if len(args) == 0 {
-			return nil, fmt.Errorf("укажите текст")
+			return nil, fmt.Errorf("missing text lines")
 		}
 		return RenderTextWithOptions(args, cfg.Length, buildTextOptionsFromConfig())
 	case "image":
 		if len(args) == 0 {
-			return nil, fmt.Errorf("укажите файл картинки")
+			return nil, fmt.Errorf("missing image file path")
 		}
 		return loadAndFitImage(args[0], cfg)
 	case "template":
 		if len(args) == 0 {
-			return nil, fmt.Errorf("укажите имя шаблона или файл .niimbot.json")
+			return nil, fmt.Errorf("missing template name or .niimbot.json path")
 		}
 		row := ""
 		if len(args) > 1 {
@@ -505,7 +505,7 @@ func buildPreviewAny(subCmd string, args []string, top, bot string, cfg AppConfi
 		img, _, err := renderSingleTemplate(args[0], row, cfg)
 		return img, err
 	default:
-		return nil, fmt.Errorf("неизвестная команда для preview: %s", subCmd)
+		return nil, fmt.Errorf("unknown preview target: %s", subCmd)
 	}
 }
 

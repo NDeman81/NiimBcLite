@@ -48,7 +48,7 @@ var (
 func RenderBarcodeLabel(opts BarcodeOptions, cfg AppConfig) (*image.Gray, error) {
 	raw := strings.TrimSpace(opts.Data)
 	if raw == "" {
-		return nil, fmt.Errorf("не заданы данные для штрихкода")
+		return nil, fmt.Errorf("missing barcode data")
 	}
 
 	fmtMode := strings.ToLower(strings.TrimSpace(opts.Format))
@@ -62,7 +62,7 @@ func RenderBarcodeLabel(opts BarcodeOptions, cfg AppConfig) (*image.Gray, error)
 	switch fmtMode {
 	case "auto", "code128", "code39", "ean13", "ean8", "pdf417":
 		if !reAsciiPrint.MatchString(raw) {
-			return nil, fmt.Errorf("линейный штрихкод поддерживает только латиницу, цифры и спецсимволы ASCII")
+			return nil, fmt.Errorf("линейный barcode supports printable ASCII characters only")
 		}
 		return renderLinearBarcodeLabel(raw, fmtMode, opts)
 	case "qr", "qrl", "qrr":
@@ -87,7 +87,7 @@ func RenderBarcodeLabel(opts BarcodeOptions, cfg AppConfig) (*image.Gray, error)
 		}
 		return render2dLabel(raw, side, opts, true)
 	default:
-		return nil, fmt.Errorf("неизвестный формат штрихкода %q (доступны: auto, code128, qr, qrl, qrr)", fmtMode)
+		return nil, fmt.Errorf("unknown barcode format %q (доступны: auto, code128, qr, qrl, qrr)", fmtMode)
 	}
 }
 
@@ -130,7 +130,7 @@ func renderLinearBarcodeLabel(raw, fmtMode string, opts BarcodeOptions) (*image.
 	bc, disp, err := encodeLinear(raw, fmtMode)
 	defer func() { _ = disp }()
 	if err != nil {
-		return nil, fmt.Errorf("ошибка кодирования штрихкода: %w", err)
+		return nil, fmt.Errorf("barcode encoding error: %w", err)
 	}
 
 	lengthMM := opts.LengthMM
@@ -603,14 +603,14 @@ func ean8CheckDigit(d7 string) byte {
 func normalizeEan13(raw string) (string, error) {
 	s := strings.TrimSpace(raw)
 	if !reOnlyDigits.MatchString(s) || (len(s) != 12 && len(s) != 13) {
-		return "", fmt.Errorf("EAN-13 требует 12 или 13 цифр (получено %d)", len(s))
+		return "", fmt.Errorf("EAN-13 requires 12 or 13 digits (got %d)", len(s))
 	}
 	cd := ean13CheckDigit(s[:12])
 	if len(s) == 12 {
 		return s + string(cd), nil
 	}
 	if s[12] != cd {
-		return "", fmt.Errorf("неверная контрольная цифра EAN-13: ожидается %c, в коде %c", cd, s[12])
+		return "", fmt.Errorf("invalid EAN-13 check digit: expected %c, got %c", cd, s[12])
 	}
 	return s, nil
 }
@@ -618,14 +618,14 @@ func normalizeEan13(raw string) (string, error) {
 func normalizeEan8(raw string) (string, error) {
 	s := strings.TrimSpace(raw)
 	if !reOnlyDigits.MatchString(s) || (len(s) != 7 && len(s) != 8) {
-		return "", fmt.Errorf("EAN-8 требует 7 или 8 цифр (получено %d)", len(s))
+		return "", fmt.Errorf("EAN-8 requires 7 or 8 digits (got %d)", len(s))
 	}
 	cd := ean8CheckDigit(s[:7])
 	if len(s) == 7 {
 		return s + string(cd), nil
 	}
 	if s[7] != cd {
-		return "", fmt.Errorf("неверная контрольная цифра EAN-8: ожидается %c, в коде %c", cd, s[7])
+		return "", fmt.Errorf("invalid EAN-8 check digit: expected %c, got %c", cd, s[7])
 	}
 	return s, nil
 }
