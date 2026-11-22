@@ -111,7 +111,7 @@ Public Function Niim_GetTemplateNames() As Variant
     End If
 End Function
 
-' 1. Р—Р°РїРѕР»РЅРµРЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ СЃС‚РѕР»Р±С†Р° С‚Р°Р±Р»РёС†С‹ СЃРїРёСЃРєРѕРј С€Р°Р±Р»РѕРЅРѕРІ
+' 1. Заполнение указанного столбца таблицы списком шаблонов
 Public Sub Niim_FillColumnWithTemplates(ByVal ws As Worksheet, ByVal colLetter As String, Optional ByVal startRow As Long = 2)
     Dim names As Variant, i As Long, lastRow As Long
     names = Niim_GetTemplateNames()
@@ -129,7 +129,7 @@ Public Sub Demo_FillColumnE_WithTemplates()
     Niim_FillColumnWithTemplates ActiveSheet, "E", 2
 End Sub
 
-' 2. Р—Р°РїРѕР»РЅРµРЅРёРµ СЂР°СЃРєСЂС‹РІР°СЋС‰РµРіРѕСЃСЏ СЃРїРёСЃРєР° (ComboBox / ListBox) РЅР° UserForm
+' 2. Заполнение раскрывающегося списка (ComboBox / ListBox) на UserForm
 Public Sub Niim_FillComboWithTemplates(ByVal ctrl As Object)
     Dim names As Variant, i As Long
     ctrl.Clear
@@ -141,7 +141,7 @@ Public Sub Niim_FillComboWithTemplates(ByVal ctrl As Object)
     If ctrl.ListCount > 0 Then ctrl.ListIndex = 0
 End Sub
 
-' 3. Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ С€С‚СЂРёС…РєРѕРґР° Рё РІСЃС‚Р°РІРєР° РІ СѓРєР°Р·Р°РЅРЅСѓСЋ СЏС‡РµР№РєСѓ
+' 3. Формирование изображения штрихкода и вставка в указанную ячейку
 Public Sub Niim_InsertBarcodeToCell(ByVal targetCell As Range, ByVal barcodeData As String, _
                                     Optional ByVal bcFormat As String = "auto", _
                                     Optional ByVal topCaption As String = "", _
@@ -161,7 +161,7 @@ Public Sub Niim_InsertBarcodeToCell(ByVal targetCell As Range, ByVal barcodeData
 
     rc = RunNiimCliUTF8(cmd, logOut)
     If rc <> 0 Or Not fso.FileExists(pngPath) Then
-        MsgBox "РћС€РёР±РєР° РіРµРЅРµСЂР°С†РёРё С€С‚СЂРёС…РєРѕРґР°:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+        MsgBox "Ошибка генерации штрихкода:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
         Exit Sub
     End If
 
@@ -194,13 +194,13 @@ End Sub
 
 Public Sub Demo_InsertBarcodeNextCell()
     If Trim(CStr(ActiveCell.Value)) = "" Then
-        MsgBox "Р’С‹РґРµР»РёС‚Рµ СЏС‡РµР№РєСѓ СЃ РєРѕРґРѕРј!", vbExclamation, "NiimBcLite"
+        MsgBox "Выделите ячейку с кодом!", vbExclamation, "NiimBcLite"
         Exit Sub
     End If
     Niim_InsertBarcodeToCell ActiveCell.Offset(0, 1), CStr(ActiveCell.Value), "auto", ""
 End Sub
 
-' 4. Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ С€С‚СЂРёС…РєРѕРґР° Рё РІСЃС‚Р°РІРєР° РІ СЌР»РµРјРµРЅС‚ Image РЅР° UserForm
+' 4. Формирование изображения штрихкода и вставка в элемент Image на UserForm
 Public Sub Niim_ShowBarcodeOnForm(ByVal imgControl As Object, ByVal barcodeData As String, _
                                   Optional ByVal bcFormat As String = "auto", _
                                   Optional ByVal topCaption As String = "", _
@@ -224,7 +224,7 @@ Public Sub Niim_ShowBarcodeOnForm(ByVal imgControl As Object, ByVal barcodeData 
 
     rc = RunNiimCliUTF8(cmd, logOut)
     If rc <> 0 Or Not fso.FileExists(pngPath) Then
-        MsgBox "РћС€РёР±РєР° С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ РїСЂРµРІСЊСЋ:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+        MsgBox "Ошибка формирования превью:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
         Exit Sub
     End If
 
@@ -232,7 +232,7 @@ Public Sub Niim_ShowBarcodeOnForm(ByVal imgControl As Object, ByVal barcodeData 
         imgControl.PictureSizeMode = 3
         Set imgControl.Picture = LoadPicture(bmpPath)
     Else
-        MsgBox "РќРµ СѓРґР°Р»РѕСЃСЊ РєРѕРЅРІРµСЂС‚РёСЂРѕРІР°С‚СЊ PNG РІ BMP С‡РµСЂРµР· WIA.", vbExclamation, "NiimBcLite"
+        MsgBox "Не удалось конвертировать PNG в BMP через WIA.", vbExclamation, "NiimBcLite"
     End If
 
     On Error Resume Next
@@ -241,12 +241,12 @@ Public Sub Niim_ShowBarcodeOnForm(ByVal imgControl As Object, ByVal barcodeData 
     On Error GoTo 0
 End Sub
 
-' 5. РџРµСЂРµРґР°С‡Р° РґР°РЅРЅС‹С… РґР»СЏ РїРµС‡Р°С‚Рё РёР· РїРѕР»РµР№ UserForm
+' 5. Передача данных для печати из полей UserForm
 Public Function Niim_PrintFromForm(ByVal templateName As String, ByVal copies As Long, ParamArray fieldValues() As Variant) As Boolean
     Dim i As Long, cols() As String, rowData As String, cmd As String, logOut As String, rc As Long
 
     If Trim(templateName) = "" Then
-        MsgBox "Р’С‹Р±РµСЂРёС‚Рµ С€Р°Р±Р»РѕРЅ СЌС‚РёРєРµС‚РєРё!", vbExclamation, "NiimBcLite"
+        MsgBox "Выберите шаблон этикетки!", vbExclamation, "NiimBcLite"
         Exit Function
     End If
     If copies < 1 Then copies = 1
@@ -264,19 +264,19 @@ Public Function Niim_PrintFromForm(ByVal templateName As String, ByVal copies As
 
     rc = RunNiimCliUTF8(cmd, logOut)
     If rc <> 0 Then
-        MsgBox "РћС€РёР±РєР° РїРµС‡Р°С‚Рё СЃ С„РѕСЂРјС‹:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+        MsgBox "Ошибка печати с формы:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
         Niim_PrintFromForm = False
     Else
         Niim_PrintFromForm = True
     End If
 End Function
 
-' Р‘Р°Р·РѕРІС‹Рµ РјР°РєСЂРѕСЃС‹ РґР»СЏ СЂР°Р±РѕС‚С‹ РЅР°РїСЂСЏРјСѓСЋ СЃРѕ СЃС‚СЂРѕРєР°РјРё Рё СЏС‡РµР№РєР°РјРё Р»РёСЃС‚Р°
+' Базовые макросы для работы напрямую со строками и ячейками листа
 Public Sub Niim_PrintActiveCellBarcode()
     Dim codeVal As String, topVal As String, cmd As String, logOut As String, rc As Long
     codeVal = Trim(CStr(ActiveCell.Value))
     If codeVal = "" Then
-        MsgBox "Р’С‹РґРµР»РёС‚Рµ СЏС‡РµР№РєСѓ СЃРѕ С€С‚СЂРёС…РєРѕРґРѕРј!", vbExclamation, "NiimBcLite"
+        MsgBox "Выделите ячейку со штрихкодом!", vbExclamation, "NiimBcLite"
         Exit Sub
     End If
     topVal = Trim(CStr(ActiveCell.Offset(0, 1).Value))
@@ -286,7 +286,7 @@ Public Sub Niim_PrintActiveCellBarcode()
     cmd = cmd & " barcode " & EscArg(codeVal)
 
     rc = RunNiimCliUTF8(cmd, logOut)
-    If rc <> 0 Then MsgBox "РћС€РёР±РєР° РїРµС‡Р°С‚Рё:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+    If rc <> 0 Then MsgBox "Ошибка печати:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
 End Sub
 
 Public Sub Niim_PrintActiveRowTemplate()
@@ -303,13 +303,13 @@ Public Sub Niim_PrintActiveRowTemplate()
     Next c
     rowData = Join(cols, ";")
     If Replace(rowData, ";", "") = "" Then
-        MsgBox "РўРµРєСѓС‰Р°СЏ СЃС‚СЂРѕРєР° РїСѓСЃС‚Р°!", vbExclamation, "NiimBcLite"
+        MsgBox "Текущая строка пуста!", vbExclamation, "NiimBcLite"
         Exit Sub
     End If
 
     cmd = "--quiet template " & EscArg(DEFAULT_TEMPLATE) & " " & EscArg(rowData)
     rc = RunNiimCliUTF8(cmd, logOut)
-    If rc <> 0 Then MsgBox "РћС€РёР±РєР° РїРµС‡Р°С‚Рё РїРѕ С€Р°Р±Р»РѕРЅСѓ:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
+    If rc <> 0 Then MsgBox "Ошибка печати по шаблону:" & vbCrLf & logOut, vbCritical, "NiimBcLite"
 End Sub
 
 Public Sub Niim_CheckPrinterInfo()
