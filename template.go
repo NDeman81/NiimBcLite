@@ -1,4 +1,4 @@
-// Конструктор этикеток: шаблон из размещённых элементов.
+// Конструктор labels: шаблон из размещённых элементов.
 //
 // Этикетка описывается не текстом с переносами, а списком элементов —
 // надписей и картинок, у каждого свои координаты в миллиметрах. Координаты
@@ -68,7 +68,7 @@ BcSafeMode *bool  `json:"bcSafeMode,omitempty"` // безопасный режи
 
 // LabelTemplate — шаблон этикетки для конструктора.
 type LabelTemplate struct {
-	LengthMM float64   `json:"length"` // длина этикетки в мм
+	LengthMM float64   `json:"length"` // label length in mm
 	Elements []Element `json:"elements"`
 }
 
@@ -152,9 +152,9 @@ continue
 			err = drawDiagElement(img, el)
 		case "barcode":
 			err = drawBarcodeElementCtx(img, el, row, now, counter, total)
-		case "":			err = fmt.Errorf("у элемента %d не указан вид (kind)", i+1)
+		case "":			err = fmt.Errorf("element %d: missing kind", i+1)
 		default:
-			err = fmt.Errorf("элемент %d: неизвестный вид %q", i+1, el.Kind)
+			err = fmt.Errorf("element %d: unknown kind %q", i+1, el.Kind)
 		}
 		if err != nil {
 			return nil, err
@@ -485,7 +485,7 @@ func fillRect(img *image.Gray, x, y, w, h int) {
 func drawLineElement(img *image.Gray, el Element) error {
 	w, h := mmToDotsMin(el.W), mmToDotsMin(el.H)
 	if el.W <= 0 || el.H <= 0 {
-		return fmt.Errorf("у линии не заданы размеры (w и h в мм)")
+		return fmt.Errorf("line: missing width/height (w, h in mm)")
 	}
 	fillRect(img, mmToDots(el.X), mmToDots(el.Y), w, h)
 	return nil
@@ -494,7 +494,7 @@ func drawLineElement(img *image.Gray, el Element) error {
 // drawFrameElement рисует рамку: четыре полосы по сторонам прямоугольника.
 func drawFrameElement(img *image.Gray, el Element) error {
 	if el.W <= 0 || el.H <= 0 {
-		return fmt.Errorf("у рамки не заданы размеры (w и h в мм)")
+		return fmt.Errorf("frame: missing width/height (w, h in mm)")
 	}
 	t := el.Thickness
 	if t <= 0 {
@@ -512,7 +512,7 @@ func drawFrameElement(img *image.Gray, el Element) error {
 
 func drawCircleElement(img *image.Gray, el Element) error {
 if el.W <= 0 || el.H <= 0 {
-return fmt.Errorf("у окружности не заданы размеры (w и h в мм)")
+return fmt.Errorf("circle: missing width/height (w, h in mm)")
 }
 t := el.Thickness
 if t <= 0 {
@@ -610,7 +610,7 @@ func pickFont(family string, bold bool) (string, error) {
 	}
 	path, ok := resolveFontFamily(family, bold)
 	if !ok {
-		return "", fmt.Errorf("font %q not found in system — выберите другой в конструкторе", family)
+		return "", fmt.Errorf("font %q not found in system", family)
 	}
 	return path, nil
 }
@@ -618,7 +618,7 @@ func pickFont(family string, bold bool) (string, error) {
 // drawImageElement рисует картинку в её рамке (с сохранением пропорций или растяжением).
 func drawImageElement(img *image.Gray, el Element) error {
 if el.Image == "" {
-return fmt.Errorf("у картинки не указан источник")
+return fmt.Errorf("image: missing source")
 }
 src, err := loadImageSource(el.Image)
 if err != nil {
@@ -626,12 +626,12 @@ return err
 }
 wMM, hMM := el.W, el.H
 if wMM <= 0 || hMM <= 0 {
-return fmt.Errorf("у картинки не заданы размеры (w и h в мм)")
+return fmt.Errorf("image: missing width/height (w, h in mm)")
 }
 boxW := int(math.Round(wMM * dotsPerMM))
 boxH := int(math.Round(hMM * dotsPerMM))
 if boxW < 1 || boxH < 1 {
-return fmt.Errorf("картинка получается меньше точки")
+return fmt.Errorf("image size is smaller than 1 pixel")
 }
 
 angle := ((el.Rotate % 360) + 360) % 360
@@ -643,7 +643,7 @@ workW, workH = boxH, boxW
 sb := src.Bounds()
 sw, sh := sb.Dx(), sb.Dy()
 if sw < 1 || sh < 1 {
-return fmt.Errorf("пустое изображение")
+return fmt.Errorf("empty image")
 }
 
 dw, dh := workW, workH
@@ -684,15 +684,15 @@ func loadImageSource(src string) (image.Image, error) {
 	if strings.HasPrefix(src, "data:") {
 		comma := strings.Index(src, ",")
 		if comma < 0 {
-			return nil, fmt.Errorf("повреждённый data:URL картинки")
+			return nil, fmt.Errorf("corrupted image data:URL")
 		}
 		raw, err := base64.StdEncoding.DecodeString(src[comma+1:])
 		if err != nil {
-			return nil, fmt.Errorf("разбор base64 картинки: %w", err)
+			return nil, fmt.Errorf("base64 image decode error: %w", err)
 		}
 		img, _, err := image.Decode(strings.NewReader(string(raw)))
 		if err != nil {
-			return nil, fmt.Errorf("разбор картинки из шаблона: %w", err)
+			return nil, fmt.Errorf("template image decode error: %w", err)
 		}
 		return img, nil
 	}
@@ -703,7 +703,7 @@ func loadImageSource(src string) (image.Image, error) {
 	defer f.Close()
 	img, _, err := image.Decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("разбор картинки %s: %w", src, err)
+		return nil, fmt.Errorf("image %s decode error: %w", src, err)
 	}
 	return img, nil
 }
@@ -772,7 +772,7 @@ colIdx, _ := strconv.Atoi(sub[1])
 dir := sub[2]
 width, _ := strconv.Atoi(sub[3])
 if colIdx < 1 || colIdx > len(row) {
-fmtErr = fmt.Errorf("элемент использует %s, а в данных только %d столбц(а/ов)", m, len(row))
+fmtErr = fmt.Errorf("element uses %s, but row has only %d column(s)", m, len(row))
 return m
 }
 return formatFieldVal(row[colIdx-1], dir, width)
@@ -786,7 +786,7 @@ text = strings.ReplaceAll(text, fmt.Sprintf("{%d}", i+1), v)
 }
 if bad := rePlaceholder.FindString(text); bad != "" {
 return "", fmt.Errorf(
-"элемент использует %s, а в данных только %d столбц(а/ов)", bad, len(row))
+"element uses %s, but row has only %d column(s)", bad, len(row))
 }
 return text, nil
 }

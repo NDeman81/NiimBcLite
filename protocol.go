@@ -1,4 +1,4 @@
-// Протокол принтера этикеток NIIMBOT N1.
+// Протокол принтера labels NIIMBOT N1.
 //
 // Восстановлен по открытой библиотеке NiimBlueLib
 // (https://github.com/MultiMote/niimbluelib, MIT) и проверен на живом
@@ -37,8 +37,8 @@ const (
 	cmdHeartbeat         = 0xDC
 	cmdPrintTestPage     = 0x5A
 	cmdCancelPrint       = 0xDA
-	cmdRfidInfo          = 0x1A // метка рулона этикеток
-	cmdRfidInfo2         = 0x1C // метка ленты (риббона)
+	cmdRfidInfo          = 0x1A // метка рулона labels
+	cmdRfidInfo2         = 0x1C // метка ribbon (риббона)
 )
 
 // Ответы: принтер → клиент (проверено на живом N1)
@@ -80,7 +80,7 @@ var infoResponse = map[byte]byte{
 	infoSerial:    0x4B,
 }
 
-// Типы этикеток протокола NIIMBOT.
+// Типы labels протокола NIIMBOT.
 //
 // Описание типов: https://printers.niim.blue/other/label-types/
 // Полный набор из восьми типов поддерживают разные модели; у N1 их пять —
@@ -96,17 +96,17 @@ var labelTypes = map[string]byte{
 	"heatshrink":   11, // термоусадочная трубка
 }
 
-// labelTypesN1 — какие типы этикеток поддерживает именно N1.
+// labelTypesN1 — какие типы labels поддерживает именно N1.
 // Источник: таблица моделей NiimBlueLib (paperTypes для id 3586).
 //
 // Остальные три типа (black, perforated, pvctag) протокол знает, но
 // прошивка N1 их не поддерживает — печатать на них не стоит.
 var labelTypesN1 = map[byte]string{
-	1:  "withgaps — этикетки с зазорами (обычные)",
-	3:  "continuous — непрерывная лента",
-	5:  "transparent — прозрачные",
-	10: "blackmarkgap — с чёрной меткой",
-	11: "heatshrink — термоусадочная трубка",
+	1:  "withgaps - gap labels (standard)",
+	3:  "continuous - continuous roll",
+	5:  "transparent - transparent labels",
+	10: "blackmarkgap - black mark labels",
+	11: "heatshrink - heat-shrink tube",
 }
 
 // labelListN1 возвращает список поддерживаемых N1 типов для сообщения об ошибке.
@@ -201,7 +201,7 @@ func parsePackets(buf *[]byte) []Packet {
 // RFID-метки рулона
 // --------------------------------------------------------------------------
 
-// RfidInfo — данные метки рулона (этикеток или ленты).
+// RfidInfo — данные метки рулона (labels или ribbon).
 //
 // Формат ответа (по NiimBlueLib, parseRfidInfoResponse):
 //
@@ -222,7 +222,7 @@ type RfidInfo struct {
 	HasCapacity bool
 }
 
-// Leftover — сколько этикеток осталось в рулоне.
+// Leftover — сколько labels осталось в рулоне.
 func (r RfidInfo) Leftover() int {
 	if r.AllPaper < 0 || r.UsedPaper < 0 {
 		return -1

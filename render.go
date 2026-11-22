@@ -101,7 +101,7 @@ func findFontFile() (string, error) {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("не нашёл TTF-шрифт с кириллицей — укажите свой через %s", fontEnvVar)
+	return "", fmt.Errorf("no TTF font found - specify via %s", fontEnvVar)
 }
 
 func loadFace(path string, sizePt float64) (font.Face, error) {
@@ -256,7 +256,7 @@ func ImageToRows(img *image.Gray, flip bool) []Row {
 	return ImageToRowsAt(img, flip, binarizeThreshold)
 }
 
-// ImageToRowsAt — то же, но с явным порогом: у разных этикеток он бывает свой.
+// ImageToRowsAt — то же, но с явным порогом: у разных labels он бывает свой.
 func ImageToRowsAt(img *image.Gray, flip bool, threshold uint8) []Row {
 	b := img.Bounds()
 	feedLen := b.Dx() // строк подачи

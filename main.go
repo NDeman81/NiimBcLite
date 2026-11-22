@@ -59,19 +59,19 @@ func main() {
 	activeCfg = cfg
 
 	fs := flag.NewFlagSet("niimbc-cli", flag.ExitOnError)
-	addrFlag := fs.String("address", "", "MAC-адрес принтера")
-	lenFlag := fs.Float64("length", 0, "длина этикетки в мм")
-	densFlag := fs.Int("density", 0, "плотность печати 1..3")
-	lblFlag := fs.String("label", "", "тип этикеток (по умолчанию withgaps; auto — по RFID)")
-	copFlag := fs.Int("copies", 0, "число копий")
-	flipFlag := fs.Bool("flip", false, "перевернуть на 180°")
-	fmtFlag := fs.String("format", "", "формат кода: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr")
-	topFlag := fs.String("top", "", "верхний текст штрихкода")
-	botFlag := fs.String("bot", "", "нижний текст штрихкода")
-	safeFlag := fs.Bool("safe", false, "безопасный режим штрихкода")
-	outFlag := fs.String("out", "", "имя PNG-файла для preview")
-	quietFlag := fs.Bool("quiet", false, "тихий вывод (только ошибки)")
-	saveCfgFlag := fs.Bool("save-config", false, "сохранить параметры в config.json")
+	addrFlag := fs.String("address", "", "printer Bluetooth MAC address")
+	lenFlag := fs.Float64("length", 0, "label length in mm")
+	densFlag := fs.Int("density", 0, "print density 1..3")
+	lblFlag := fs.String("label", "", "label type (default: withgaps; auto = read RFID)")
+	copFlag := fs.Int("copies", 0, "number of copies")
+	flipFlag := fs.Bool("flip", false, "rotate 180 degrees")
+	fmtFlag := fs.String("format", "", "code format: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr")
+	topFlag := fs.String("top", "", "top caption text")
+	botFlag := fs.String("bot", "", "bottom caption text")
+	safeFlag := fs.Bool("safe", false, "barcode safe mode")
+	outFlag := fs.String("out", "", "output PNG path for preview")
+	quietFlag := fs.Bool("quiet", false, "quiet mode (errors only)")
+	saveCfgFlag := fs.Bool("save-config", false, "save flags to config.json")
 
 	var flagsArgs, posArgs []string
 	rawArgs := os.Args[1:]
@@ -200,7 +200,7 @@ func main() {
 
 	case "text":
 		if len(args) == 0 {
-			fatal(fmt.Errorf("missing text lines этикетки"))
+			fatal(fmt.Errorf("missing text lines"))
 		}
 		img, err := RenderTextWithOptions(args, cfg.Length, buildTextOptionsFromConfig())
 		if err != nil {
@@ -529,19 +529,19 @@ func printUsage() {
 Команды:
   scan                                  Найти принтер и сохранить адрес в config.json
   info                                  Принудительно опросить модель, заряд и RFID расходников
-  barcode "ДАННЫЕ"                      Напечатать одиночный штрихкод или 2D-код
-  text "Строка 1" ["Строка 2"]          Напечатать текстовую этикетку
+  barcode "DATA"                        Print a single barcode or 2D code
+  text "Line 1" ["Line 2"]              Print a text label
   image файл.png                        Напечатать картинку (PNG/JPEG/GIF)
-  template "Шаблон" ["кол1;кол2"]       Напечатать по шаблону из Конструктора (.json или по имени)
+  template "Name" ["col1;col2"]         Print a single label using a saved or .niimbot.json template
   preview barcode|text|image|template   Сохранить PNG-макет без подключения к принтеру (--out)
 
 Флаги (указываются перед командой):
   --length 50        Длина этикетки в мм (по умолчанию из config.json)
   --format auto      Формат: auto, code128, code39, ean13, ean8, pdf417, qr, qrl, qrr, datamatrix, dml, dmr
-  --top "Текст"      Верхняя подпись штрихкода
-  --bot "Текст"      Нижняя подпись штрихкода
+  --top "Text"       Top caption for barcode
+  --bot "Text"       Bottom caption for barcode
   --safe             Безопасный режим штрихкода
-  --label withgaps   Тип этикеток (по умолчанию withgaps; auto — по RFID)
+  --label withgaps   Тип labels (по умолчанию withgaps; auto — по RFID)
   --copies 1         Количество копий
   --out label.png    Путь сохранения PNG для preview
   --quiet            Тихий режим (выводить только ошибки)

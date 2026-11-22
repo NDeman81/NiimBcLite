@@ -72,19 +72,19 @@ type Printer struct {
 // printErrors — расшифровка кодов ошибки печати (ответ 0xdb).
 var printErrors = map[byte]string{
 	0x01: "cover open",
-	0x02: "нет бумаги",
-	0x03: "низкий заряд батареи",
-	0x04: "исключение батареи",
-	0x05: "отменено пользователем",
-	0x06: "ошибка данных (принтер не успел принять — добавьте паузу между строками)",
-	0x07: "перегрев",
-	0x08: "бумага закончилась",
-	0x09: "принтер занят",
-	0x0a: "нет печатающей головки",
-	0x0b: "низкая температура",
-	0x0c: "головка не закреплена",
-	0x0d: "нет ленты (риббона)",
-	0x0e: "неподходящая лента",
+	0x02: "out of paper",
+	0x03: "low battery",
+	0x04: "battery exception",
+	0x05: "cancelled by user",
+	0x06: "data error (buffer overflow)",
+	0x07: "overheated",
+	0x08: "paper ended",
+	0x09: "printer busy",
+	0x0a: "no printhead",
+	0x0b: "low temperature",
+	0x0c: "printhead unlocked",
+	0x0d: "no ribbon",
+	0x0e: "incompatible ribbon",
 	0x11: "out of ribbon",
 }
 
@@ -119,11 +119,11 @@ LogInfoMsg("%s", msg)
 func ConnectMAC(mac string, verbose, freshDiscovery bool) (*Printer, error) {
 	addr, err := makeAddress(mac)
 	if err != nil {
-		return nil, fmt.Errorf("не разобрать адрес принтера %q: %w", mac, err)
+		return nil, fmt.Errorf("invalid printer address %q: %w", mac, err)
 	}
 	var adapter = bluetooth.DefaultAdapter
 	if err := ensureAdapterEnabled(); err != nil {
-		return nil, fmt.Errorf("не удалось включить Bluetooth-адаптер: %w", err)
+		return nil, fmt.Errorf("failed to enable Bluetooth adapter: %w", err)
 	}
 	p := &Printer{verbose: verbose}
 
@@ -154,13 +154,13 @@ func ConnectMAC(mac string, verbose, freshDiscovery bool) (*Printer, error) {
 	select {
 	case r := <-ch:
 		if r.err != nil {
-			return nil, fmt.Errorf("подключение: %w", r.err)
+			return nil, fmt.Errorf("connect failed: %w", r.err)
 		}
 		dev = r.dev
 	case <-time.After(30 * time.Second):
 		go adapter.StopScan() // не даём сканированию держать адаптер
-		return nil, fmt.Errorf("подключение к %s не удалось за 30 с — "+
-			"принтер включён и не занят другим устройством?", mac)
+		return nil, fmt.Errorf("connection to %s timed out after 30s - "+
+			"is printer powered on and not busy?", mac)
 	}
 
 	p.device = dev
@@ -180,7 +180,7 @@ func (p *Printer) warmUp(adapter *bluetooth.Adapter, mac string) error {
 	want := strings.ToUpper(mac)
 	found := make(chan string, 1)
 	var once sync.Once
-	p.log("Сканирую, чтобы BlueZ увидел принтер …")
+	p.log("Scanning for printer...")
 
 	go func() {
 		// Ошибку здесь не показываем: сканирование останавливаем мы сами,
@@ -189,7 +189,7 @@ func (p *Printer) warmUp(adapter *bluetooth.Adapter, mac string) error {
 		_ = adapter.Scan(func(_ *bluetooth.Adapter, r bluetooth.ScanResult) {
 			if strings.EqualFold(r.Address.String(), want) {
 				once.Do(func() {
-					p.log("  принтер на связи: %s (%s)", r.LocalName(), r.Address.String())
+					p.log("  printer found: %s (%s)", r.LocalName(), r.Address.String())
 					found <- r.Address.String()
 				})
 			}
@@ -200,7 +200,7 @@ func (p *Printer) warmUp(adapter *bluetooth.Adapter, mac string) error {
 	case <-found:
 	case <-time.After(12 * time.Second):
 		stopScan(adapter)
-		return fmt.Errorf("принтер %s не найден в эфире — включите его и повторите", mac)
+		return fmt.Errorf("printer %s not found - turn it on and retry", mac)
 	}
 	stopScan(adapter)
 	time.Sleep(300 * time.Millisecond) // дать BlueZ дозаписать свойства
@@ -237,7 +237,7 @@ return adapterEnableErr
 func ScanPrinter(nameHint string, timeout time.Duration, verbose bool) (string, error) {
 	var adapter = bluetooth.DefaultAdapter
 	if err := ensureAdapterEnabled(); err != nil {
-		return "", fmt.Errorf("не удалось включить Bluetooth-адаптер: %w", err)
+		return "", fmt.Errorf("failed to enable Bluetooth adapter: %w", err)
 	}
 	type found struct {
 		addr string
@@ -263,7 +263,7 @@ func ScanPrinter(nameHint string, timeout time.Duration, verbose bool) (string, 
 			}
 		})
 		if verbose && err != nil {
-			fmt.Fprintf(os.Stderr, "  сканирование прервано: %v\n", err)
+			fmt.Fprintf(os.Stderr, "  scan aborted: %v\n", err)
 		}
 	}()
 
@@ -274,9 +274,9 @@ func ScanPrinter(nameHint string, timeout time.Duration, verbose bool) (string, 
 	stopScan(adapter)
 
 	if best.addr == "" {
-		return "", fmt.Errorf("принтер %q не найден", nameHint)
+		return "", fmt.Errorf("printer %q not found", nameHint)
 	}
-	LogInfoMsg("найден %s  %s  RSSI %d\n", best.name, best.addr, best.rssi)
+	LogInfoMsg("found %s  %s  RSSI %d\n", best.name, best.addr, best.rssi)
 	return best.addr, nil
 }
 
@@ -284,7 +284,7 @@ func ScanPrinter(nameHint string, timeout time.Duration, verbose bool) (string, 
 func (p *Printer) setup() error {
 	services, err := p.device.DiscoverServices(nil)
 	if err != nil {
-		return fmt.Errorf("поиск сервисов: %w", err)
+		return fmt.Errorf("discover services: %w", err)
 	}
 
 	var target *bluetooth.DeviceCharacteristic
@@ -310,7 +310,7 @@ func (p *Printer) setup() error {
 		}
 	}
 	if target == nil {
-		return fmt.Errorf("не нашёл характеристику принтера (нужен сервис %s)", bleServiceUUID)
+		return fmt.Errorf("printer characteristic not found (service %s)", bleServiceUUID)
 	}
 	p.char = *target
 	p.log("  Characteristic: %s", p.char.UUID().String())
@@ -330,7 +330,7 @@ func (p *Printer) setup() error {
 				p.mu.Unlock()
 				why := printErrors[pkt.Data[0]]
 				if why == "" {
-					why = "неизвестный код"
+					why = "unknown code"
 				}
 				p.log("  ⚠️ printer error: %s (0x%02x)", why, pkt.Data[0])
 			}
@@ -378,7 +378,7 @@ func (p *Printer) Send(cmd byte, data []byte, want []byte, timeout time.Duration
 	}
 	p.log("  → 0x%02x%s %x", cmd, cmdTitle(cmd), data)
 	if _, err := p.char.WriteWithoutResponse(buildPacket(cmd, data)); err != nil {
-		return nil, fmt.Errorf("отправка 0x%02x: %w", cmd, err)
+		return nil, fmt.Errorf("send 0x%02x: %w", cmd, err)
 	}
 	if want == nil {
 		return nil, nil
@@ -393,7 +393,7 @@ return nil, nil
 }
 rem := time.Until(deadline)
 if rem <= 0 {
-if cmd == cmdPrintStatus { LogDebugMsg("! нет ответа на 0x%02x за %s", cmd, timeout) } else { p.log("  ! нет ответа на 0x%02x за %s", cmd, timeout) }
+if cmd == cmdPrintStatus { LogDebugMsg("! no response to 0x%02x within %s", cmd, timeout) } else { p.log("  ! no response to 0x%02x within %s", cmd, timeout) }
 return nil, nil
 }
 step := 30 * time.Millisecond
@@ -434,7 +434,7 @@ func (p *Printer) Handshake() (Info, error) {
 	}
 	if pkt != nil && len(pkt.Data) > 0 {
 		info.ConnectResult = pkt.Data[0]
-		p.log("  рукопожатие: %d (2 = ConnectedNew)", info.ConnectResult)
+		p.log("  handshake: %d (2 = ConnectedNew)", info.ConnectResult)
 	}
 
 	get := func(t byte) *Packet {
@@ -487,7 +487,7 @@ func errorText(code byte) string {
 	if t := printErrors[code]; t != "" {
 		return t
 	}
-	return fmt.Sprintf("неизвестная ошибка (код %d)", code)
+	return fmt.Sprintf("unknown error (code %d)", code)
 }
 
 // sendRows отправляет строки одной этикетки.
@@ -511,7 +511,7 @@ func (p *Printer) sendRowsSafe(rows []Row) error {
 const rowDelay = 4 * time.Millisecond
 for i, row := range rows {
 if code := p.takeError(); code != 0 {
-return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+return fmt.Errorf("printer error: %s", errorText(code))
 }
 if row == nil {
 p.Send(cmdPrintEmptyRow, append(u16(i), 1), nil, 0)
@@ -541,7 +541,7 @@ if len(batchBuf) == 0 {
 return nil
 }
 if _, err := p.char.WriteWithoutResponse(batchBuf); err != nil {
-return fmt.Errorf("отправка пачки строк: %w", err)
+return fmt.Errorf("send batch rows: %w", err)
 }
 batchBuf = batchBuf[:0]
 inBatch = 0
@@ -552,9 +552,9 @@ return nil
 for i, row := range rows {
 if code := p.takeError(); code != 0 {
 if code == 0x06 {
-LogWarn("буфер принтера переполнен в режиме fast — рекомендуем --print-mode safe")
+LogWarn("printer buffer overflow in fast mode")
 }
-return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+return fmt.Errorf("printer error: %s", errorText(code))
 }
 var pkt []byte
 if row == nil {
@@ -600,7 +600,7 @@ func (p *Printer) beginPage(height, copies int) {
 // PrintRows печатает одну этикетку в заданном числе копий.
 func (p *Printer) PrintRows(rows []Row, density, labelType byte, copies int) error {
 	height := len(rows)
-	p.log("  печать: %d строк, головка %d точек, плотность %d, тип этикетки %d",
+	p.log("  print: %d rows, head %d px, density %d, label type %d",
 		height, printheadPixels, density, labelType)
 
 	p.beginJob(copies, density, labelType)
@@ -612,7 +612,7 @@ func (p *Printer) PrintRows(rows []Row, density, labelType byte, copies int) err
 	return p.waitFinished(copies)
 }
 
-// PrintPages печатает серию этикеток ОДНИМ заданием: одна страница на этикетку.
+// PrintPages печатает серию labels ОДНИМ заданием: одна страница на этикетку.
 //
 // Так быстрее и аккуратнее, чем отдельное задание на каждую этикетку:
 // принтер не останавливается между ними. Копии разворачиваются в страницы —
@@ -638,18 +638,18 @@ func (p *Printer) PrintPages(pages [][]Row, density, labelType byte, copies int,
 	p.log("  Job: %d labels (%d templates x %d copies), density %d, type %d",
 		total, len(pages), copies, density, labelType)
 
-	p.mu.Lock(); p.printingNow = true; p.mu.Unlock(); defer func() { p.mu.Lock(); p.printingNow = false; p.mu.Unlock() }(); p.beginJob(total, density, labelType); if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }
+	p.mu.Lock(); p.printingNow = true; p.mu.Unlock(); defer func() { p.mu.Lock(); p.printingNow = false; p.mu.Unlock() }(); p.beginJob(total, density, labelType); if code := p.takeError(); code != 0 { return fmt.Errorf("printer error: %s", errorText(code)) }
 	t0 := time.Now()
 	for i, rows := range flat {
-		if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }; p.beginPage(len(rows), 1); if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code)) }
+		if code := p.takeError(); code != 0 { return fmt.Errorf("printer error: %s", errorText(code)) }; p.beginPage(len(rows), 1); if code := p.takeError(); code != 0 { return fmt.Errorf("printer error: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("printer error: %s", errorText(code)) }; if code := p.takeError(); code != 0 { return fmt.Errorf("printer error: %s", errorText(code)) }
 		if err := p.sendRows(rows); err != nil {
-			return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
+			return fmt.Errorf("label %d of %d: %w", i+1, total, err)
 		}
 		p.Send(cmdPageEnd, nil, nil, 0); time.Sleep(50 * time.Millisecond)
 		// Ждём, пока принтер допечатает эту этикетку: иначе следующая
 		// уйдёт в занятый принтер и он ответит ошибкой данных.
 		if err := p.waitPageDone(20 * time.Second); err != nil {
-			return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
+			return fmt.Errorf("label %d of %d: %w", i+1, total, err)
 		}
 		if progress != nil {
 			progress(i+1, total)
@@ -681,7 +681,7 @@ func (p *Printer) waitPageDone(timeout time.Duration) error {
 	good := 0
 	for time.Now().Before(deadline) {
 		if code := p.takeError(); code != 0 {
-			return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+			return fmt.Errorf("printer error: %s", errorText(code))
 		}
 		pkt, _ := p.Send(cmdPrintStatus, nil, []byte{respPrintStatus}, func() time.Duration { if activeCfg.StatusPollTimeoutMs > 0 { return time.Duration(activeCfg.StatusPollTimeoutMs) * time.Millisecond }; return 350 * time.Millisecond }())
 		if pkt != nil && len(pkt.Data) >= 4 {
@@ -695,11 +695,11 @@ func (p *Printer) waitPageDone(timeout time.Duration) error {
 				good = 0
 			}
 		} else {
-			good = 0 // принтер занят и не отвечает — значит, ещё печатает
+			good = 0 // printer busy и не отвечает — значит, ещё печатает
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	return fmt.Errorf("страница не завершилась за %s", timeout)
+	return fmt.Errorf("page did not finish within %s", timeout)
 }
 
 // waitFinished опрашивает статус печати (0xa3).
@@ -720,7 +720,7 @@ func (p *Printer) waitFinished(pages int) error {
 			return err
 		}
 		if code := p.takeError(); code != 0 {
-			return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+			return fmt.Errorf("printer error: %s", errorText(code))
 		}
 		if pkt != nil && len(pkt.Data) >= 4 {
 			pg := int(pkt.Data[0])<<8 | int(pkt.Data[1])
@@ -736,23 +736,23 @@ func (p *Printer) waitFinished(pages int) error {
 		}
 		time.Sleep(80 * time.Millisecond)
 	}
-	return fmt.Errorf("не дождался подтверждения печати (этикетка может быть напечатана)")
+	return fmt.Errorf("timed out waiting for print confirmation")
 }
 
 // ReadRfid читает метку рулона: ribbon=false — этикетки, ribbon=true — лента.
 func (p *Printer) ReadRfid(ribbon bool) (RfidInfo, error) {
 	cmd, resp := byte(cmdRfidInfo), byte(respRfidInfo)
-	what := "этикеток"
+	what := "labels"
 	if ribbon {
 		cmd, resp = cmdRfidInfo2, respRfidInfo2
-		what = "ленты"
+		what = "ribbon"
 	}
 	pkt, err := p.Send(cmd, nil, []byte{resp}, 4*time.Second)
 	if err != nil {
 		return RfidInfo{}, err
 	}
 	if pkt == nil {
-		return RfidInfo{}, fmt.Errorf("принтер не ответил на запрос метки %s", what)
+		return RfidInfo{}, fmt.Errorf("printer did not respond to %s RFID query", what)
 	}
 	return parseRfidInfo(pkt.Data), nil
 }
@@ -760,16 +760,16 @@ func (p *Printer) ReadRfid(ribbon bool) (RfidInfo, error) {
 // Calibrate выполняет тихую программную калибровку (0x23, 0x59) или физическую протяжку пустой этикетки.
 func (p *Printer) Calibrate(withFeed bool, lengthMM float64, labelType byte) error {
 if withFeed {
-LogInfoMsg("Запуск физической калибровки: протяжка пустой этикетки по датчику...")
+LogInfoMsg("Starting physical calibration...")
 blank := NewLabelImage(lengthMM)
 return p.PrintRows(ImageToRows(blank, false), 1, labelType, 1)
 }
-LogInfoMsg("Запуск тихой программной калибровки датчика (0x23, 0x59)...")
+LogInfoMsg("Starting silent sensor calibration (0x23, 0x59)...")
 p.Send(cmdSetLabelType, []byte{labelType}, nil, 0)
 time.Sleep(80 * time.Millisecond)
 p.Send(0x59, []byte{0x01}, nil, 0)
 time.Sleep(400 * time.Millisecond)
-LogKey("Тихая калибровка завершена")
+LogKey("Silent calibration completed")
 return nil
 }
 
