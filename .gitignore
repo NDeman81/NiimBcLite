@@ -6,3 +6,4 @@ niimbc-cli.exe
 *.xlsb
 ~$*.xls*
 *.7z
+examples_excel/*.v2.bas
