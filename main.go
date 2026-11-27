@@ -382,14 +382,40 @@ func mustConnect(cfg AppConfig, verbose bool) *Printer {
 		mac = found
 		foundByName = true
 	}
-	p, err := ConnectMAC(mac, verbose, foundByName)
-	if err != nil {
-		fatal(err)
+	var p *Printer
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		if attempt > 0 {
+			time.Sleep(800 * time.Millisecond)
+		}
+		p, err = ConnectMAC(mac, verbose, foundByName)
+		if err == nil {
+			p.printMode = cfg.PrintMode
+			if foundByName && strings.TrimSpace(cfg.Address) == "" {
+				cfg.Address = mac
+				activeCfg.Address = mac
+				_ = SaveConfig(cfg)
+				LogKey("Printer MAC %s auto-saved to config.json", mac)
+			}
+			return p
+		}
 	}
-	p.printMode = cfg.PrintMode
-	return p
+	if !foundByName {
+		LogWarn("Saved MAC %s unreachable, falling back to N1- scan...", mac)
+		if found, sErr := ScanPrinter("N1-", 12*time.Second, verbose); sErr == nil && found != "" {
+			if p2, cErr := ConnectMAC(found, verbose, true); cErr == nil {
+				p2.printMode = cfg.PrintMode
+				cfg.Address = found
+				activeCfg.Address = found
+				_ = SaveConfig(cfg)
+				LogKey("Updated printer MAC %s saved to config.json", found)
+				return p2
+			}
+		}
+	}
+	fatal(err)
+	return nil
 }
-
 func printSingleImage(img *image.Gray, cfg AppConfig, tplLabel string, verbose bool) {
 	rows := ImageToRowsAt(img, cfg.Flip, uint8(cfg.Threshold))
 	p := mustConnect(cfg, verbose)
